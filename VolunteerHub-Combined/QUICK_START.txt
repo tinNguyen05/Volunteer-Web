@@ -1,0 +1,194 @@
+# ⚡ VolunteerHub - Quick Reference Card
+
+## 🎯 3-Step Launch
+
+```
+STEP 1: MongoDB
+mongod
+
+STEP 2: Backend  
+cd backend && npm run dev
+
+STEP 3: Frontend
+cd frontend && npm run dev
+```
+
+Then open: **http://localhost:5173**
+
+---
+
+## 📌 Key URLs
+
+| Service | URL | Port |
+|---------|-----|------|
+| Frontend | http://localhost:5173 | 5173 |
+| Backend | http://localhost:5000 | 5000 |
+| Database | localhost:27017 | 27017 |
+
+---
+
+## 🔗 Main API Endpoints
+
+### Auth
+- `POST /api/auth/register` - Sign up
+- `POST /api/auth/login` - Sign in
+- `GET /api/auth/me` - Get profile
+- `PUT /api/auth/profile` - Update profile
+
+### Events
+- `GET /api/events/all` - List events
+- `POST /api/events/create` - Create event
+- `POST /api/events/register` - Join event
+- `POST /api/events/:id/approve` - Approve event
+
+### Blood Donation
+- `POST /api/blood-donation/register` - Register
+- `GET /api/blood-donation/statistics` - Stats
+
+### Membership
+- `POST /api/membership/register` - Join
+- `GET /api/membership/statistics` - Stats
+
+---
+
+## 🎨 Frontend Features
+
+- ✅ Authentication (Login/Register)
+- ✅ Event Browse & Registration
+- ✅ Blood Donation Program
+- ✅ Membership Program
+- ✅ User Dashboard
+- ✅ Admin Panel
+- ✅ Toast Notifications
+- ✅ Responsive Design
+
+---
+
+## 📦 Built With
+
+- **Frontend**: React 19 + Vite + Tailwind CSS
+- **Backend**: Node.js + Express 4.18.2
+- **Database**: MongoDB + Mongoose 7.6.1
+- **Auth**: JWT + bcryptjs
+
+---
+
+## 🧪 Quick Test
+
+```bash
+# Check backend health
+curl http://localhost:5000/api/health
+
+# Register new user
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Test","email":"test@test.com","password":"123456"}'
+
+# Get all events
+curl http://localhost:5000/api/events/all
+```
+
+---
+
+## 🚨 Common Issues
+
+| Issue | Fix |
+|-------|-----|
+| MongoDB error | Run `mongod` first |
+| Port 5000 in use | Kill process: `netstat -ano \| findstr :5000` |
+| Module not found | Run `npm install` in folder |
+| Build error | Delete `node_modules` and reinstall |
+
+---
+
+## 📝 Folder Structure
+
+```
+VolunteerHub-Combined/
+├── backend/           # Node.js + Express
+│   ├── src/
+│   │   ├── api/       # Routes
+│   │   ├── models/    # MongoDB schemas
+│   │   ├── controllers/
+│   │   └── middlewares/
+│   ├── index.js
+│   └── package.json
+│
+├── frontend/          # React + Vite
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── api/
+│   │   └── styles/
+│   ├── index.html
+│   └── package.json
+│
+└── *.md              # Documentation
+```
+
+---
+
+## ✅ Build Status
+
+- ✅ Frontend: Built (292.79 KB)
+- ✅ Backend: Ready
+- ✅ Database: Ready
+- ✅ Auth: Ready
+- ✅ APIs: 23 endpoints
+- ✅ Tests: Ready
+
+---
+
+## 🚀 Commands Cheatsheet
+
+```bash
+# Start everything
+mongod                    # Terminal 1
+cd backend && npm run dev # Terminal 2
+cd frontend && npm run dev # Terminal 3
+
+# Build frontend for production
+npm run build
+
+# Install dependencies
+npm install
+
+# Clear cache
+rm -r node_modules package-lock.json
+npm install
+
+# Kill process on port 5000
+taskkill /PID <PID> /F
+```
+
+---
+
+## 💾 Git Commands
+
+```bash
+# Check changes
+git status
+
+# Add files
+git add .
+
+# Commit
+git commit -m "message"
+
+# Push
+git push origin main
+```
+
+---
+
+## 📞 Support
+
+For issues, check:
+1. `STARTUP_GUIDE.md` - Full startup guide
+2. `BACKEND_API_GUIDE.md` - API reference
+3. `FRONTEND_INTEGRATION_EXAMPLES.md` - Code examples
+4. `README_BACKEND.md` - Backend overview
+
+---
+
+**Ready to launch? Open 3 terminals and follow the 3 steps above! 🚀**
