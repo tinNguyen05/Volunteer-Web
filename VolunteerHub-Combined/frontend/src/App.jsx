@@ -37,6 +37,7 @@ import VolunteerCompleted from './pages/manager/VolunteerCompleted'
 // Import admin pages
 import EventApproval from './pages/admin/EventApproval'
 import UserManagement from './pages/admin/UserManagement'
+import VolunteerListAdmin from './pages/admin/VolunteerList'
 
 // Import NotFound
 import NotFound from './pages/notfound/NotFound'
@@ -235,6 +236,14 @@ function AppRouter() {
         element={
           <RoleRoute allowedRoles={['admin']}>
             <UserManagement />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/volunteers" 
+        element={
+          <RoleRoute allowedRoles={['admin']}>
+            <VolunteerListAdmin />
           </RoleRoute>
         } 
       />

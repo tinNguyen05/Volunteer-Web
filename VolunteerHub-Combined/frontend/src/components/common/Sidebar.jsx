@@ -46,7 +46,8 @@ function Sidebar() {
       {
         title: 'QUẢN TRỊ',
         items: [
-          { key: 'user-management', label: 'Quản lý người dùng', icon: '👥', to: '/admin/users' },
+          { key: 'user-management', label: 'Quản lý Manager', icon: '👥', to: '/admin/users' },
+          { key: 'volunteer-management', label: 'Quản lý Volunteer', icon: '👤', to: '/admin/volunteers' },
         ]
       }
     ],

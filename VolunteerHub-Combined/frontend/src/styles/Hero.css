@@ -722,13 +722,17 @@
 /* ==================== EVENTS SECTION ==================== */
 
 .events-section {
-  padding: 5rem 2rem;
+  padding: 5rem 0;
   background: white;
+  width: 100%;
 }
 
 .events-container {
-  max-width: 1200px;
+  max-width: 100%;
+  width: 100%;
+  padding: 0 2rem;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* Events Carousel Wrapper */
@@ -748,7 +752,7 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   flex: 1;
-  max-width: 1200px;
+  max-width: 100%;
 }
 
 /* Carousel Navigation Arrows */

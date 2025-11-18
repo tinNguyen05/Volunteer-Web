@@ -6,24 +6,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 
 const UserList = () => {
-  const { pendingManagers, approveManager, registeredVolunteers } = useAuth();
+  const { pendingManagers, approveManager } = useAuth();
   const { showNotification } = useNotification();
   const [users, setUsers] = useState([]);
 
-  // Combine volunteers and managers to user list
+  // Only show managers in this page
   useEffect(() => {
-    const volunteersFromStorage = registeredVolunteers.map(volunteer => ({
-      id: volunteer.id,
-      name: volunteer.name,
-      email: volunteer.email,
-      password: volunteer.password,
-      phone: volunteer.phone || 'N/A',
-      role: "Tình nguyện viên",
-      status: volunteer.locked ? "Locked" : "Active",
-      joined: new Date(volunteer.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      isVolunteer: true
-    }));
-
     const managersFromPending = pendingManagers.map(manager => ({
       id: manager.id,
       name: manager.name,
@@ -36,8 +24,8 @@ const UserList = () => {
       isManager: true
     }));
     
-    setUsers([...volunteersFromStorage, ...managersFromPending]);
-  }, [pendingManagers, registeredVolunteers]);
+    setUsers(managersFromPending);
+  }, [pendingManagers]);
 
   const handleApprove = (id) => {
     // Update manager's approved status in localStorage
@@ -57,21 +45,10 @@ const UserList = () => {
   };
 
   const handleLock = (id) => {
-    const user = users.find((u) => u.id === id);
-    if (!user) return;
-
-    // Update in appropriate storage
-    if (user.isVolunteer) {
-      const updatedVolunteers = registeredVolunteers.map(v => 
-        v.id === id ? { ...v, locked: true } : v
-      );
-      localStorage.setItem('vh_volunteers', JSON.stringify(updatedVolunteers));
-    } else if (user.isManager) {
-      const updatedManagers = pendingManagers.map(m => 
-        m.id === id ? { ...m, locked: true } : m
-      );
-      localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
-    }
+    const updatedManagers = pendingManagers.map(m => 
+      m.id === id ? { ...m, locked: true } : m
+    );
+    localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
 
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, status: "Locked" } : u))
@@ -83,21 +60,10 @@ const UserList = () => {
   };
 
   const handleUnlock = (id) => {
-    const user = users.find((u) => u.id === id);
-    if (!user) return;
-
-    // Update in appropriate storage
-    if (user.isVolunteer) {
-      const updatedVolunteers = registeredVolunteers.map(v => 
-        v.id === id ? { ...v, locked: false } : v
-      );
-      localStorage.setItem('vh_volunteers', JSON.stringify(updatedVolunteers));
-    } else if (user.isManager) {
-      const updatedManagers = pendingManagers.map(m => 
-        m.id === id ? { ...m, locked: false } : m
-      );
-      localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
-    }
+    const updatedManagers = pendingManagers.map(m => 
+      m.id === id ? { ...m, locked: false } : m
+    );
+    localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
 
     setUsers((prev) =>
       prev.map((u) => (u.id === id ? { ...u, status: "Active" } : u))
@@ -117,18 +83,12 @@ const UserList = () => {
     const user = users.find((u) => u.id === id);
     if (!user) return;
 
-    if (window.confirm(`Bạn có chắc muốn xóa người dùng ${user.name}?`)) {
-      // Remove from appropriate storage
-      if (user.isVolunteer) {
-        const updatedVolunteers = registeredVolunteers.filter(v => v.id !== id);
-        localStorage.setItem('vh_volunteers', JSON.stringify(updatedVolunteers));
-      } else if (user.isManager) {
-        const updatedManagers = pendingManagers.filter(m => m.id !== id);
-        localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
-      }
+    if (window.confirm(`Bạn có chắc muốn xóa quản lý ${user.name}?`)) {
+      const updatedManagers = pendingManagers.filter(m => m.id !== id);
+      localStorage.setItem('vh_pending_managers', JSON.stringify(updatedManagers));
       
       setUsers(prev => prev.filter(u => u.id !== id));
-      showNotification('Đã xóa người dùng thành công!', 'success');
+      showNotification('Đã xóa quản lý thành công!', 'success');
       
       // Force reload to sync with context
       window.location.reload();
