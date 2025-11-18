@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import '../styles/Hero.css'
 import ServiceCard from '../components/ui/ServiceCard'
 import EventCard from '../components/ui/EventCard'
 
 export default function Hero() {
   const [highlightedWord, setHighlightedWord] = useState('Together')
+  const [currentEventIndex, setCurrentEventIndex] = useState(0)
+  const [eventsPerPage, setEventsPerPage] = useState(3)
 
   const handleJoinNow = () => {
     const element = document.getElementById('member')
@@ -26,6 +29,111 @@ export default function Hero() {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }
+
+  // All events data
+  const allEvents = [
+    {
+      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop",
+      date: "2025-11-20",
+      title: "Dọn rác bãi biển",
+      description: "Cùng nhau làm sạch bãi biển Mỹ Khê.",
+      attendees: "45",
+      link: "#"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&fit=crop",
+      date: "2025-12-15",
+      title: "Trồng cây xanh tại trường",
+      description: "Chương trình trồng 500 cây xanh.",
+      attendees: "120",
+      link: "#"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1469571486292-0ba52a96ae4a?w=400&fit=crop",
+      date: "2025-11-25",
+      title: "Phát quà cho trẻ em",
+      description: "Tặng quà trung thu cho trẻ em khó khăn.",
+      attendees: "80",
+      link: "#"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&fit=crop",
+      date: "2025-11-30",
+      title: "Hiến máu nhân đạo",
+      description: "Chiến dịch hiến máu cứu người.",
+      attendees: "95",
+      link: "#"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1509099863731-ef4bff19e808?w=400&fit=crop",
+      date: "2025-12-05",
+      title: "Xây nhà tình thương",
+      description: "Xây dựng nhà cho người nghèo.",
+      attendees: "60",
+      link: "#"
+    },
+    {
+      image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400&fit=crop",
+      date: "2025-12-10",
+      title: "Dạy học miễn phí",
+      description: "Dạy học cho trẻ em vùng cao.",
+      attendees: "75",
+      link: "#"
+    }
+  ]
+
+  // Filter out expired events (events before today)
+  const activeEvents = allEvents.filter(event => {
+    const eventDate = new Date(event.date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset time to start of day
+    return eventDate >= today
+  })
+
+  // Calculate responsive events per page
+  useEffect(() => {
+    const updateEventsPerPage = () => {
+      if (window.innerWidth < 768) {
+        setEventsPerPage(1)
+      } else if (window.innerWidth < 1024) {
+        setEventsPerPage(2)
+      } else {
+        setEventsPerPage(3)
+      }
+    }
+
+    updateEventsPerPage()
+    window.addEventListener('resize', updateEventsPerPage)
+    return () => window.removeEventListener('resize', updateEventsPerPage)
+  }, [])
+
+  // Navigation handlers - Move one event at a time
+  const handlePrevious = () => {
+    setCurrentEventIndex(prev => {
+      if (prev === 0) {
+        // If at the beginning, go to the last possible position
+        return Math.max(0, activeEvents.length - eventsPerPage)
+      }
+      return prev - 1
+    })
+  }
+
+  const handleNext = () => {
+    setCurrentEventIndex(prev => {
+      const maxIndex = Math.max(0, activeEvents.length - eventsPerPage)
+      if (prev >= maxIndex) {
+        // If at the end, go back to the beginning
+        return 0
+      }
+      return prev + 1
+    })
+  }
+
+  // Get visible events
+  const visibleEvents = activeEvents.slice(currentEventIndex, currentEventIndex + eventsPerPage)
+
+  // Show navigation arrows only if there are more events than can be displayed
+  const showNavigation = activeEvents.length > eventsPerPage
 
 
 
@@ -125,32 +233,59 @@ export default function Hero() {
             Hãy xem những sự kiện tình nguyện sắp tới
           </p>
 
-          <div className="events-grid">
-            <EventCard
-              image="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop"
-              date="2025-11-20"
-              title="Dọon rác bãi biển"
-              description="Cùng nhau làm sạch bãi biển Mỹ Khê."
-              attendees="45"
-              link="#"
-            />
-            <EventCard
-              image="https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&fit=crop"
-              date="2025-11-15"
-              title="Trồng cây xanh tại trường"
-              description="Chương trình trồng 500 cây xanh."
-              attendees="120"
-              link="#"
-            />
-            <EventCard
-              image="https://images.unsplash.com/photo-1469571486292-0ba52a96ae4a?w=400&fit=crop"
-              date="2025-10-01"
-              title="Phát quà cho trẻ em"
-              description="Tặng quà trung thu cho trẻ em khó khăn."
-              attendees="80"
-              link="#"
-            />
+          <div className="events-carousel-wrapper">
+            {showNavigation && (
+              <button 
+                className="carousel-arrow carousel-arrow-left" 
+                onClick={handlePrevious}
+                aria-label="Sự kiện trước"
+              >
+                <ChevronLeft size={32} />
+              </button>
+            )}
+            
+            <div className="events-grid">
+              {visibleEvents.map((event, index) => (
+                <EventCard
+                  key={index}
+                  image={event.image}
+                  date={event.date}
+                  title={event.title}
+                  description={event.description}
+                  attendees={event.attendees}
+                  link={event.link}
+                />
+              ))}
+            </div>
+
+            {showNavigation && (
+              <button 
+                className="carousel-arrow carousel-arrow-right" 
+                onClick={handleNext}
+                aria-label="Sự kiện tiếp theo"
+              >
+                <ChevronRight size={32} />
+              </button>
+            )}
           </div>
+
+          {/* Dots Indicator */}
+          {activeEvents.length > 0 && showNavigation && (
+            <div className="carousel-dots">
+              {Array.from({ length: Math.max(0, activeEvents.length - eventsPerPage + 1) }).map((_, index) => (
+                <button
+                  key={index}
+                  className={`carousel-dot ${currentEventIndex === index ? 'active' : ''}`}
+                  onClick={() => setCurrentEventIndex(index)}
+                  aria-label={`Đi tới sự kiện ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {activeEvents.length === 0 && (
+            <p className="no-events-message">Hiện tại không có sự kiện nào sắp diễn ra.</p>
+          )}
         </div>
       </section>
     </div>
