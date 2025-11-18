@@ -6,6 +6,7 @@ import './styles/ProfessionalLayout.css'
 import './styles/animations.css'
 import './styles/Auth.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 
 // Import public pages (landing page)
 import Header from './components/Header'
@@ -255,9 +256,11 @@ function AppRouter() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRouter />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppRouter />
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   )
 }

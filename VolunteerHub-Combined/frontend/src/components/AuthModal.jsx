@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useNotification } from '../contexts/NotificationContext'
 import '../styles/Auth.css'
 
 export default function AuthModal() {
-  const { isAuthOpen, authMode, closeAuth, switchMode, login } = useAuth()
+  const { isAuthOpen, authMode, closeAuth, switchMode, login, addPendingManager, pendingManagers, addVolunteer, registeredVolunteers } = useAuth()
+  const { showNotification } = useNotification()
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -16,16 +18,8 @@ export default function AuthModal() {
     password: '',
     confirmPassword: '',
     agreeTerms: false,
-    // Volunteer fields
-    phone: '',
-    dateOfBirth: '',
-    address: '',
-    interests: '',
-    // Manager fields
-    organizationName: '',
-    organizationAddress: '',
-    organizationPhone: '',
-    position: ''
+    // Manager only field
+    phone: ''
   })
   const [errors, setErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -52,42 +46,33 @@ export default function AuthModal() {
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!formData.email) {
-      newErrors.email = 'Email is required'
+      newErrors.email = 'Email là bắt buộc'
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email'
+      newErrors.email = 'Vui lòng nhập email hợp lệ'
     }
 
     // Password validation
     if (!formData.password) {
-      newErrors.password = 'Password is required'
+      newErrors.password = 'Mật khẩu là bắt buộc'
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự'
     }
 
     // Confirm password validation (signup only)
     if (authMode === 'signup') {
       if (!formData.confirmPassword) {
-        newErrors.confirmPassword = 'Please confirm your password'
+        newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu'
       } else if (formData.password !== formData.confirmPassword) {
-        newErrors.confirmPassword = 'Passwords do not match'
+        newErrors.confirmPassword = 'Mật khẩu không khớp'
       }
 
       if (!formData.agreeTerms) {
-        newErrors.agreeTerms = 'You must agree to the terms'
+        newErrors.agreeTerms = 'Bạn phải đồng ý với điều khoản'
       }
 
-      // Role-specific validation
-      if (selectedRole === 'volunteer') {
-        if (!formData.phone) newErrors.phone = 'Số điện thoại là bắt buộc'
-        if (!formData.dateOfBirth) newErrors.dateOfBirth = 'Ngày sinh là bắt buộc'
-        if (!formData.address) newErrors.address = 'Địa chỉ là bắt buộc'
-      }
-
+      // Manager-specific validation
       if (selectedRole === 'manager') {
-        if (!formData.organizationName) newErrors.organizationName = 'Tên tổ chức là bắt buộc'
-        if (!formData.organizationAddress) newErrors.organizationAddress = 'Địa chỉ tổ chức là bắt buộc'
-        if (!formData.organizationPhone) newErrors.organizationPhone = 'Số điện thoại tổ chức là bắt buộc'
-        if (!formData.position) newErrors.position = 'Chức vụ là bắt buộc'
+        if (!formData.phone) newErrors.phone = 'Số điện thoại là bắt buộc'
       }
     }
 
@@ -105,53 +90,157 @@ export default function AuthModal() {
     // Simulate API call
     setTimeout(() => {
       if (authMode === 'signup') {
-        // Đăng ký thành công, lưu thông tin và chuyển đến dashboard
-        const userObj = {
-          id: Date.now(),
-          name: formData.fullname,
-          email: formData.email,
-          role: selectedRole,
-          // Include role-specific data
-          ...(selectedRole === 'volunteer' && {
-            phone: formData.phone,
-            dateOfBirth: formData.dateOfBirth,
-            address: formData.address,
-            interests: formData.interests
-          }),
-          ...(selectedRole === 'manager' && {
-            organizationName: formData.organizationName,
-            organizationAddress: formData.organizationAddress,
-            organizationPhone: formData.organizationPhone,
-            position: formData.position
+        if (selectedRole === 'volunteer') {
+          // Volunteer registration - save account
+          const volunteerData = {
+            id: Date.now(),
+            name: formData.fullname,
+            email: formData.email,
+            password: formData.password,
+            role: 'volunteer',
+            approved: true,
+            createdAt: new Date().toISOString()
+          }
+          
+          addVolunteer(volunteerData)
+          
+          // Clear form
+          setFormData({
+            fullname: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            agreeTerms: false,
+            phone: ''
           })
+          
+          showNotification('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
+          setIsLoading(false)
+          switchMode('login')
+          
+        } else if (selectedRole === 'manager') {
+          // Manager registration - needs approval
+          const managerData = {
+            id: Date.now(),
+            name: formData.fullname,
+            email: formData.email,
+            password: formData.password,
+            phone: formData.phone,
+            role: 'manager',
+            approved: false,
+            createdAt: new Date().toISOString()
+          }
+          
+          addPendingManager(managerData)
+          
+          // Clear form
+          setFormData({
+            fullname: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            agreeTerms: false,
+            phone: ''
+          })
+          
+          showNotification('Đơn đăng ký của bạn đã được gửi. Vui lòng đợi admin phê duyệt.', 'success')
+          setIsLoading(false)
+          closeAuth()
         }
-        
-        login(userObj)
-        setIsLoading(false)
-        closeAuth()
-        navigate('/dashboard')
       } else {
-        // Đăng nhập
-        // Kiểm tra tài khoản admin mặc định
+        // Login - Check role and validate credentials
         if (selectedRole === 'admin') {
+          // Admin login - only allow admin account
           if (formData.email !== 'admin@gmail.com' || formData.password !== '123123') {
-            setErrors({ email: 'Tài khoản admin không đúng', password: 'Tài khoản admin không đúng' })
+            setErrors({ email: 'Email hoặc mật khẩu không đúng', password: 'Email hoặc mật khẩu không đúng' })
             setIsLoading(false)
             return
           }
+          
+          const userObj = {
+            id: 'admin-001',
+            name: 'Administrator',
+            email: formData.email,
+            role: 'admin',
+            approved: true
+          }
+          
+          login(userObj)
+          showNotification('Đăng nhập thành công!', 'success')
+          setIsLoading(false)
+          closeAuth()
+          
+        } else if (selectedRole === 'manager') {
+          // Manager login - check if account exists and is approved
+          const manager = pendingManagers.find(m => 
+            m.email === formData.email && 
+            m.password === formData.password
+          );
+          
+          if (!manager) {
+            setErrors({ email: 'Email hoặc mật khẩu không đúng', password: 'Email hoặc mật khẩu không đúng' });
+            setIsLoading(false);
+            return;
+          }
+          
+          if (manager.locked) {
+            setErrors({ email: 'Tài khoản đã bị khóa' });
+            setIsLoading(false);
+            return;
+          }
+          
+          if (!manager.approved) {
+            setErrors({ email: 'Tài khoản chưa được admin phê duyệt' });
+            setIsLoading(false);
+            return;
+          }
+          
+          const userObj = {
+            id: manager.id,
+            name: manager.name,
+            email: manager.email,
+            phone: manager.phone,
+            role: 'manager',
+            approved: true
+          }
+          
+          login(userObj)
+          showNotification('Đăng nhập thành công!', 'success')
+          setIsLoading(false)
+          closeAuth()
+          
+        } else {
+          // Volunteer login - check if account exists
+          const volunteer = registeredVolunteers.find(v => 
+            v.email === formData.email && 
+            v.password === formData.password
+          );
+          
+          if (!volunteer) {
+            setErrors({ email: 'Email hoặc mật khẩu không đúng', password: 'Email hoặc mật khẩu không đúng' });
+            setIsLoading(false);
+            return;
+          }
+          
+          if (volunteer.locked) {
+            setErrors({ email: 'Tài khoản đã bị khóa' });
+            setIsLoading(false);
+            return;
+          }
+          
+          const userObj = {
+            id: volunteer.id,
+            name: volunteer.name,
+            email: volunteer.email,
+            role: 'volunteer',
+            approved: true
+          }
+          
+          login(userObj)
+          showNotification('Đăng nhập thành công!', 'success')
+          setIsLoading(false)
+          closeAuth()
         }
-
-        const userObj = {
-          id: selectedRole === 'admin' ? 'admin-001' : Date.now(),
-          name: selectedRole === 'admin' ? 'Administrator' : (formData.email ? formData.email.split('@')[0] : 'Người dùng'),
-          email: formData.email,
-          role: selectedRole,
-        }
-        
-        login(userObj)
-        setIsLoading(false)
-        closeAuth()
-        navigate('/dashboard')
       }
     }, 1000)
   }
@@ -303,109 +392,19 @@ export default function AuthModal() {
                   </div>
                 </div>
 
-                {/* Volunteer-specific fields */}
-                {authMode === 'signup' && selectedRole === 'volunteer' && (
-                  <>
-                    <div className="form-group">
-                      <input
-                        type="tel"
-                        name="phone"
-                        placeholder="Số điện thoại"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.phone ? 'error' : ''}`}
-                      />
-                      {errors.phone && <span className="error-text">{errors.phone}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <input
-                        type="date"
-                        name="dateOfBirth"
-                        placeholder="Ngày sinh"
-                        value={formData.dateOfBirth}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.dateOfBirth ? 'error' : ''}`}
-                      />
-                      {errors.dateOfBirth && <span className="error-text">{errors.dateOfBirth}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="address"
-                        placeholder="Địa chỉ"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.address ? 'error' : ''}`}
-                      />
-                      {errors.address && <span className="error-text">{errors.address}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <textarea
-                        name="interests"
-                        placeholder="Lĩnh vực quan tâm (tùy chọn)"
-                        value={formData.interests}
-                        onChange={handleInputChange}
-                        className="form-input"
-                        rows="2"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Manager-specific fields */}
+                {/* Manager-specific fields - only phone number */}
                 {authMode === 'signup' && selectedRole === 'manager' && (
-                  <>
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="organizationName"
-                        placeholder="Tên tổ chức"
-                        value={formData.organizationName}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.organizationName ? 'error' : ''}`}
-                      />
-                      {errors.organizationName && <span className="error-text">{errors.organizationName}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="organizationAddress"
-                        placeholder="Địa chỉ tổ chức"
-                        value={formData.organizationAddress}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.organizationAddress ? 'error' : ''}`}
-                      />
-                      {errors.organizationAddress && <span className="error-text">{errors.organizationAddress}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <input
-                        type="tel"
-                        name="organizationPhone"
-                        placeholder="Số điện thoại tổ chức"
-                        value={formData.organizationPhone}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.organizationPhone ? 'error' : ''}`}
-                      />
-                      {errors.organizationPhone && <span className="error-text">{errors.organizationPhone}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="position"
-                        placeholder="Chức vụ"
-                        value={formData.position}
-                        onChange={handleInputChange}
-                        className={`form-input ${errors.position ? 'error' : ''}`}
-                      />
-                      {errors.position && <span className="error-text">{errors.position}</span>}
-                    </div>
-                  </>
+                  <div className="form-group">
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="Số điện thoại"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className={`form-input ${errors.phone ? 'error' : ''}`}
+                    />
+                    {errors.phone && <span className="error-text">{errors.phone}</span>}
+                  </div>
                 )}
 
                 {/* Terms & Conditions (Signup Only) */}

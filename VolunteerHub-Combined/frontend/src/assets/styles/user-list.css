@@ -108,12 +108,23 @@ body {
   color: #b91c1c;
 }
 
+.status-badge.pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
 .actions button {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
   margin-right: 10px;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.actions button:hover {
+  opacity: 0.7;
 }
 
 .actions .view-btn {
@@ -126,4 +137,24 @@ body {
 
 .actions .unlock-btn, .actions .approve {
   color: #16a34a;
+}
+
+.actions .approve-btn {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.actions .delete-btn {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.password-field {
+  font-family: monospace;
+  background: #f3f4f6;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #374151;
+  letter-spacing: 0.5px;
 }
