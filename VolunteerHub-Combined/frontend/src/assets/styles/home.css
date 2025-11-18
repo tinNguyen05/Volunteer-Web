@@ -202,12 +202,13 @@ body {
 /*----------------------Dashboard-------------------------*/
 .main-content {
     margin-left: 280px;
-    flex: 1;
+    width: calc(100% - 280px);
     padding: 2.5rem 3rem;
     min-height: 0;
     height: 100vh;
     overflow-y: auto;
     background: #f8fafc;
+    box-sizing: border-box;
 }
 
 .main-content::-webkit-scrollbar {
@@ -631,6 +632,7 @@ body {
 @media (max-width: 1024px) {
     .main-content {
         margin-left: 280px;
+        width: calc(100% - 280px);
         padding: 2rem;
     }
     
@@ -646,6 +648,7 @@ body {
     
     .main-content {
         margin-left: 240px;
+        width: calc(100% - 240px);
         padding: 1.5rem;
     }
     

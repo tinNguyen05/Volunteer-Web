@@ -12,7 +12,17 @@ function Register() {
     fullname: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    // Volunteer fields
+    phone: '',
+    dateOfBirth: '',
+    address: '',
+    interests: '',
+    // Manager fields
+    organizationName: '',
+    organizationAddress: '',
+    organizationPhone: '',
+    position: ''
   });
 
   const handleRoleClick = (role) => {
@@ -30,15 +40,31 @@ function Register() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validation
+    // Basic validation
     if (!formData.fullname || !formData.email || !formData.password || !formData.confirmPassword) {
-      alert('Vui lòng điền tất cả các trường');
+      alert('Vui lòng điền tất cả các trường bắt buộc');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
       alert('Mật khẩu không khớp');
       return;
+    }
+
+    // Role-specific validation
+    if (selectedRole === 'volunteer') {
+      if (!formData.phone || !formData.dateOfBirth || !formData.address) {
+        alert('Vui lòng điền đầy đủ thông tin volunteer');
+        return;
+      }
+    }
+
+    if (selectedRole === 'manager') {
+      if (!formData.organizationName || !formData.organizationAddress || 
+          !formData.organizationPhone || !formData.position) {
+        alert('Vui lòng điền đầy đủ thông tin tổ chức');
+        return;
+      }
     }
 
     const roleMap = { 'volunteer': 'volunteer', 'manager': 'manager' };
@@ -49,6 +75,19 @@ function Register() {
       name: formData.fullname,
       email: formData.email,
       role,
+      // Include role-specific data
+      ...(selectedRole === 'volunteer' && {
+        phone: formData.phone,
+        dateOfBirth: formData.dateOfBirth,
+        address: formData.address,
+        interests: formData.interests
+      }),
+      ...(selectedRole === 'manager' && {
+        organizationName: formData.organizationName,
+        organizationAddress: formData.organizationAddress,
+        organizationPhone: formData.organizationPhone,
+        position: formData.position
+      })
     };
 
     login(userObj);
@@ -131,6 +170,102 @@ function Register() {
               </button>
             ))}
           </div>
+
+          {/* Volunteer-specific fields */}
+          {selectedRole === 'volunteer' && (
+            <>
+              <label htmlFor="phone">Số điện thoại</label>
+              <input 
+                type="tel" 
+                id="phone" 
+                name="phone" 
+                required 
+                value={formData.phone}
+                onChange={handleInputChange}
+                placeholder="Nhập số điện thoại"
+              />
+
+              <label htmlFor="dateOfBirth">Ngày sinh</label>
+              <input 
+                type="date" 
+                id="dateOfBirth" 
+                name="dateOfBirth" 
+                required 
+                value={formData.dateOfBirth}
+                onChange={handleInputChange}
+              />
+
+              <label htmlFor="address">Địa chỉ</label>
+              <input 
+                type="text" 
+                id="address" 
+                name="address" 
+                required 
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Nhập địa chỉ của bạn"
+              />
+
+              <label htmlFor="interests">Lĩnh vực quan tâm</label>
+              <textarea 
+                id="interests" 
+                name="interests" 
+                value={formData.interests}
+                onChange={handleInputChange}
+                placeholder="VD: Môi trường, giáo dục, y tế..."
+                rows="3"
+              />
+            </>
+          )}
+
+          {/* Manager-specific fields */}
+          {selectedRole === 'manager' && (
+            <>
+              <label htmlFor="organizationName">Tên tổ chức</label>
+              <input 
+                type="text" 
+                id="organizationName" 
+                name="organizationName" 
+                required 
+                value={formData.organizationName}
+                onChange={handleInputChange}
+                placeholder="Nhập tên tổ chức"
+              />
+
+              <label htmlFor="organizationAddress">Địa chỉ tổ chức</label>
+              <input 
+                type="text" 
+                id="organizationAddress" 
+                name="organizationAddress" 
+                required 
+                value={formData.organizationAddress}
+                onChange={handleInputChange}
+                placeholder="Nhập địa chỉ tổ chức"
+              />
+
+              <label htmlFor="organizationPhone">Số điện thoại tổ chức</label>
+              <input 
+                type="tel" 
+                id="organizationPhone" 
+                name="organizationPhone" 
+                required 
+                value={formData.organizationPhone}
+                onChange={handleInputChange}
+                placeholder="Nhập số điện thoại tổ chức"
+              />
+
+              <label htmlFor="position">Chức vụ</label>
+              <input 
+                type="text" 
+                id="position" 
+                name="position" 
+                required 
+                value={formData.position}
+                onChange={handleInputChange}
+                placeholder="VD: Giám đốc, Quản lý dự án..."
+              />
+            </>
+          )}
 
           <button type="submit" className="create-account-btn">Đăng ký</button>
         </form>

@@ -23,9 +23,60 @@ export default function EventManagement() {
   };
 
   const [events, setEvents] = useState([
-    { id: 1, title: "Dọn rác bãi biển", date: "2025-11-20", location: "Đà Nẵng", desc: "Cùng nhau làm sạch bãi biển Mỹ Khê.", status: "upcoming", image: "" },
-    { id: 2, title: "Trồng cây xanh tại trường", date: "2025-11-15", location: "Hà Nội", desc: "Chương trình trồng 500 cây xanh.", status: "ongoing", image: "" },
-    { id: 3, title: "Phát quà cho trẻ em", date: "2025-10-01", location: "TP. Hồ Chí Minh", desc: "Tặng quà trung thu cho trẻ em khó khăn.", status: "completed", image: "" },
+    { 
+      id: 1, 
+      title: "Dọn rác bãi biển", 
+      date: "2025-11-20", 
+      location: "Bãi biển Mỹ Khê, Đà Nẵng", 
+      desc: "Cùng nhau làm sạch bãi biển Mỹ Khê, bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề rác thải nhựa đại dương.", 
+      status: "upcoming", 
+      image: "https://images.unsplash.com/photo-1618477247222-acbfc0ea5c2b?w=800&h=400&fit=crop" 
+    },
+    { 
+      id: 2, 
+      title: "Trồng cây xanh tại trường", 
+      date: "2025-11-15", 
+      location: "Trường THPT Chu Văn An, Hà Nội", 
+      desc: "Chương trình trồng 500 cây xanh trong khuôn viên trường, góp phần cải thiện môi trường học đường và nâng cao ý thức bảo vệ môi trường cho học sinh.", 
+      status: "ongoing", 
+      image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=400&fit=crop" 
+    },
+    { 
+      id: 3, 
+      title: "Phát quà cho trẻ em", 
+      date: "2025-10-01", 
+      location: "Làng trẻ SOS, TP. Hồ Chí Minh", 
+      desc: "Tặng quà trung thu cho trẻ em khó khăn tại làng trẻ SOS, mang đến niềm vui và sự ấm áp cho các em trong dịp lễ.", 
+      status: "completed", 
+      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&h=400&fit=crop" 
+    },
+    { 
+      id: 4, 
+      title: "Hiến máu nhân đạo", 
+      date: "2025-11-25", 
+      location: "Trung tâm Huyết học Truyền máu, Hà Nội", 
+      desc: "Chiến dịch hiến máu tình nguyện nhằm đóng góp vào ngân hàng máu quốc gia, cứu giúp những người bệnh đang cần truyền máu cấp cứu.", 
+      status: "upcoming", 
+      image: "https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&h=400&fit=crop" 
+    },
+    { 
+      id: 5, 
+      title: "Dạy học miễn phí cho trẻ em vùng cao", 
+      date: "2025-11-18", 
+      location: "Xã Tà Xùa, Sơn La", 
+      desc: "Chương trình tình nguyện mang kiến thức đến với trẻ em vùng cao, giảng dạy các môn học cơ bản và tổ chức các hoạt động vui chơi giáo dục.", 
+      status: "ongoing", 
+      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&h=400&fit=crop" 
+    },
+    { 
+      id: 6, 
+      title: "Xây nhà tình thương", 
+      date: "2025-12-05", 
+      location: "Xã Lộc Sơn, Quảng Trị", 
+      desc: "Tham gia xây dựng nhà tình thương cho các gia đình có hoàn cảnh khó khăn, mang lại mái ấm cho người nghèo trước mùa đông.", 
+      status: "upcoming", 
+      image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=400&fit=crop" 
+    },
   ]);
 
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -107,11 +158,25 @@ export default function EventManagement() {
               <div className="event-list">
                 {filtered.map((event) => (
                   <div key={event.id} className="event-card event-vol">
+                    {event.image && (
+                      <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden' }}>
+                        <img 
+                          src={event.image} 
+                          alt={event.title}
+                          style={{ 
+                            width: '100%', 
+                            height: '200px', 
+                            objectFit: 'cover',
+                            display: 'block'
+                          }}
+                        />
+                      </div>
+                    )}
                     <div className="event-title-row">
                       <a href="#" className="event-title" onClick={handlePosts}>{event.title}</a>
                       <span className="event-date">{event.date}</span>
                     </div>
-                    <div className="event-location">{event.location}</div>
+                    <div className="event-location">📍 {event.location}</div>
                     <div className="event-desc">{event.desc}</div>
                     <div className="event-tags">
                       <span className={`event-status ${event.status}`}>

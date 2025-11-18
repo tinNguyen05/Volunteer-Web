@@ -135,8 +135,10 @@
   padding: 50px 45px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   position: relative;
+  overflow-y: auto;
+  max-height: 85vh;
 }
 
 .auth-close {
@@ -180,7 +182,16 @@
   margin-bottom: 20px;
 }
 
-.form-input {
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--auth-gray-dark);
+  margin-bottom: 10px;
+}
+
+.form-input,
+textarea.form-input {
   width: 100%;
   padding: 12px 14px;
   border: 1.5px solid var(--auth-gray-light);
@@ -209,6 +220,14 @@
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
+/* Textarea specific */
+textarea.form-input {
+  resize: vertical;
+  min-height: 70px;
+  max-height: 150px;
+  font-family: 'Poppins', sans-serif;
+}
+
 /* Password Wrapper */
 .password-wrapper {
   position: relative;
@@ -232,6 +251,39 @@
 
 .password-toggle:hover {
   color: var(--auth-green-bright);
+}
+
+/* Role Selector */
+.role-selector {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: white;
+  border: 1.5px solid var(--auth-gray-light);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--auth-gray-dark);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.role-btn:hover {
+  border-color: var(--auth-green-bright);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.role-btn.active {
+  background: var(--auth-green-bright);
+  border-color: var(--auth-green-bright);
+  color: white;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
 /* Checkbox Group */
