@@ -99,53 +99,8 @@ function Sidebar() {
         ))}
       </nav>
 
-      {/* User Info Section */}
-      <div className="sidebar-user">
-        <div className="user-card">
-          <div className="user-avatar-sidebar">
-            {user?.avatar ? (
-              <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-            ) : (
-              user?.name?.charAt(0)?.toUpperCase() || 'U'
-            )}
-          </div>
-          <div className="user-info-sidebar">
-            <p className="user-name-sidebar">{user?.name || 'Người dùng'}</p>
-            <p className="user-email-sidebar">{user?.email || ''}</p>
-            <p className="user-role-sidebar">
-              {user?.role === 'volunteer' ? 'Tình nguyện viên' : 
-               user?.role === 'manager' ? 'Quản lý' : 
-               user?.role === 'admin' ? 'Quản trị viên' : 'Tình nguyện viên'}
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Footer */}
       <div className="sidebar-footer">
-        <button 
-          className="btn-home" 
-          onClick={() => navigate('/')}
-          style={{
-            width: '100%',
-            padding: '10px',
-            marginBottom: '12px',
-            backgroundColor: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}
-        >
-          <span>🏠</span>
-          <span>Quay về trang chủ</span>
-        </button>
         <p>© 2025 Arise Hearts</p>
         <p className="sidebar-footer-sub">Kết nối - Cống hiến - Lan tỏa</p>
       </div>

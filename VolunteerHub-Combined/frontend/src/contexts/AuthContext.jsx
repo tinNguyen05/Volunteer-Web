@@ -9,10 +9,26 @@ export function AuthProvider({ children }) {
   const [pendingManagers, setPendingManagers] = useState([]); // Managers waiting for approval
   const [registeredVolunteers, setRegisteredVolunteers] = useState([]); // Registered volunteers
 
-  // Khởi tạo từ localStorage khi component mount
+  // Khởi tạo từ localStorage, sessionStorage, hoặc cookie khi component mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('vh_user');
+      // Thử lấy từ localStorage trước
+      let raw = localStorage.getItem('vh_user');
+      
+      // Nếu không có, thử sessionStorage
+      if (!raw) {
+        raw = sessionStorage.getItem('vh_session');
+      }
+      
+      // Nếu vẫn không có, thử cookie
+      if (!raw) {
+        const cookies = document.cookie.split('; ');
+        const authCookie = cookies.find(c => c.startsWith('vh_auth='));
+        if (authCookie) {
+          raw = authCookie.split('=')[1];
+        }
+      }
+      
       if (raw) setUser(JSON.parse(raw));
       
       const pending = localStorage.getItem('vh_pending_managers');
@@ -25,13 +41,32 @@ export function AuthProvider({ children }) {
 
   const login = (userObj) => {
     setUser(userObj);
+    
+    // Lưu vào localStorage
     localStorage.setItem('vh_user', JSON.stringify(userObj));
+    
+    // Lưu vào sessionStorage
+    sessionStorage.setItem('vh_session', JSON.stringify(userObj));
+    
+    // Lưu vào cookie (expires in 7 days)
+    const expires = new Date();
+    expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000);
+    document.cookie = `vh_auth=${JSON.stringify(userObj)}; expires=${expires.toUTCString()}; path=/`;
+    
     setIsAuthOpen(false); // Đóng modal sau khi đăng nhập
   };
 
   const logout = () => {
     setUser(null);
+    
+    // Xóa localStorage
     localStorage.removeItem('vh_user');
+    
+    // Xóa sessionStorage
+    sessionStorage.removeItem('vh_session');
+    
+    // Xóa cookie
+    document.cookie = 'vh_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   };
 
   const openAuth = (mode = 'login') => {

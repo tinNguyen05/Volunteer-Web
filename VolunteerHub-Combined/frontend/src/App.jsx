@@ -7,6 +7,7 @@ import './styles/animations.css'
 import './styles/Auth.css'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { EventProvider } from './contexts/EventContext'
 
 // Import public pages (landing page)
 import Header from './components/Header'
@@ -266,9 +267,11 @@ function App() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <Router>
-          <AppRouter />
-        </Router>
+        <EventProvider>
+          <Router>
+            <AppRouter />
+          </Router>
+        </EventProvider>
       </NotificationProvider>
     </AuthProvider>
   )

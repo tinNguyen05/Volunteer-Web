@@ -57,6 +57,15 @@ function Dashboard() {
                  user?.role === 'admin' ? 'Quản trị viên' : 'Tình nguyện viên'}
               </span>
             </div>
+            <div className="user-dropdown">
+              <button 
+                className="btn-home-dropdown" 
+                onClick={() => navigate('/')}
+              >
+                <span>🏠</span>
+                <span>Quay về trang chủ</span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -79,7 +88,7 @@ function Dashboard() {
         <section className="activities-section">
           <div className="section-header">
             <h2 className="section-title">Hoạt Động Gần Đây</h2>
-            <button className="view-all-btn">Xem tất cả →</button>
+            <button className="view-all-btn" onClick={() => navigate('/history')}>Xem tất cả →</button>
           </div>
 
           <div className="table-container">
@@ -119,7 +128,7 @@ function Dashboard() {
         <section className="events-section">
           <div className="section-header">
             <h2 className="section-title">Sự Kiện Sắp Diễn Ra</h2>
-            <button className="view-all-btn">Xem tất cả →</button>
+            <button className="view-all-btn" onClick={() => navigate('/events')}>Xem tất cả →</button>
           </div>
 
           <div className="events-grid">

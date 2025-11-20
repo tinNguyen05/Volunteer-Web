@@ -1,10 +1,16 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import Sidebar from "../../components/common/Sidebar";
+import { useAuth } from "../../contexts/AuthContext";
+import { useEvents } from "../../contexts/EventContext";
+import { useNotification } from "../../contexts/NotificationContext";
 import "../../assets/styles/events.css";
 
 export default function EventManagement() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { approvedEvents, pendingEvents, createEvent, updateEvent, deleteEvent } = useEvents();
+  const { showNotification } = useNotification();
 
   const handlePosts = () => {
     navigate('/eventPosts');
@@ -22,89 +28,62 @@ export default function EventManagement() {
     navigate('/manager/volunteerCompleted');
   };
 
-  const [events, setEvents] = useState([
-    { 
-      id: 1, 
-      title: "Dọn rác bãi biển", 
-      date: "2025-11-20", 
-      location: "Bãi biển Mỹ Khê, Đà Nẵng", 
-      desc: "Cùng nhau làm sạch bãi biển Mỹ Khê, bảo vệ môi trường biển và nâng cao ý thức cộng đồng về vấn đề rác thải nhựa đại dương.", 
-      status: "upcoming", 
-      image: "https://images.unsplash.com/photo-1618477247222-acbfc0ea5c2b?w=800&h=400&fit=crop" 
-    },
-    { 
-      id: 2, 
-      title: "Trồng cây xanh tại trường", 
-      date: "2025-11-15", 
-      location: "Trường THPT Chu Văn An, Hà Nội", 
-      desc: "Chương trình trồng 500 cây xanh trong khuôn viên trường, góp phần cải thiện môi trường học đường và nâng cao ý thức bảo vệ môi trường cho học sinh.", 
-      status: "ongoing", 
-      image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&h=400&fit=crop" 
-    },
-    { 
-      id: 3, 
-      title: "Phát quà cho trẻ em", 
-      date: "2025-10-01", 
-      location: "Làng trẻ SOS, TP. Hồ Chí Minh", 
-      desc: "Tặng quà trung thu cho trẻ em khó khăn tại làng trẻ SOS, mang đến niềm vui và sự ấm áp cho các em trong dịp lễ.", 
-      status: "completed", 
-      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&h=400&fit=crop" 
-    },
-    { 
-      id: 4, 
-      title: "Hiến máu nhân đạo", 
-      date: "2025-11-25", 
-      location: "Trung tâm Huyết học Truyền máu, Hà Nội", 
-      desc: "Chiến dịch hiến máu tình nguyện nhằm đóng góp vào ngân hàng máu quốc gia, cứu giúp những người bệnh đang cần truyền máu cấp cứu.", 
-      status: "upcoming", 
-      image: "https://images.unsplash.com/photo-1615461066841-6116e61058f4?w=800&h=400&fit=crop" 
-    },
-    { 
-      id: 5, 
-      title: "Dạy học miễn phí cho trẻ em vùng cao", 
-      date: "2025-11-18", 
-      location: "Xã Tà Xùa, Sơn La", 
-      desc: "Chương trình tình nguyện mang kiến thức đến với trẻ em vùng cao, giảng dạy các môn học cơ bản và tổ chức các hoạt động vui chơi giáo dục.", 
-      status: "ongoing", 
-      image: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=800&h=400&fit=crop" 
-    },
-    { 
-      id: 6, 
-      title: "Xây nhà tình thương", 
-      date: "2025-12-05", 
-      location: "Xã Lộc Sơn, Quảng Trị", 
-      desc: "Tham gia xây dựng nhà tình thương cho các gia đình có hoàn cảnh khó khăn, mang lại mái ấm cho người nghèo trước mùa đông.", 
-      status: "upcoming", 
-      image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=400&fit=crop" 
-    },
-  ]);
+  // Combine approved and pending events for manager view
+  // Show status: approved or pending
+  const managerEvents = [
+    ...approvedEvents
+      .filter(e => e.createdBy === user?.id || user?.role === 'admin')
+      .map(e => ({ ...e, approvalStatus: 'approved' })),
+    ...pendingEvents
+      .filter(e => e.createdBy === user?.id || user?.role === 'admin')
+      .map(e => ({ ...e, approvalStatus: 'pending' }))
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const [activeTab, setActiveTab] = useState("upcoming");
+  const [activeTab, setActiveTab] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [form, setForm] = useState({
-    title: '', date: '', location: '', desc: '', status: 'upcoming', image: ''
+    title: '', date: '', location: '', description: '', image: '', attendees: '0'
   });
 
-  const filtered = events.filter((e) => e.status === activeTab);
+  // Filter by approval status
+  const filtered = activeTab === "all" 
+    ? managerEvents 
+    : managerEvents.filter((e) => e.approvalStatus === activeTab);
 
   const handleCreate = () => {
     setEditingEvent(null);
-    setForm({ title: '', date: '', location: '', desc: '', status: 'upcoming', image: '' });
+    setForm({ title: '', date: '', location: '', description: '', image: '', attendees: '0' });
     setShowModal(true);
   };
 
   const handleEdit = (e, ev) => {
     e.preventDefault();
+    if (ev.approvalStatus === 'pending') {
+      showNotification('Không thể chỉnh sửa sự kiện đang chờ phê duyệt!', 'error');
+      return;
+    }
     setEditingEvent(ev);
-    setForm({ ...ev });
+    setForm({ 
+      title: ev.title, 
+      date: ev.date, 
+      location: ev.location || '', 
+      description: ev.description, 
+      image: ev.image,
+      attendees: ev.attendees || '0'
+    });
     setShowModal(true);
   };
 
   const handleDelete = (e, id) => {
     e.preventDefault();
     if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
-      setEvents(events.filter((ev) => ev.id !== id));
+      const result = deleteEvent(id, user?.role);
+      if (result.success) {
+        showNotification(result.message, 'success');
+      } else {
+        showNotification(result.message, 'error');
+      }
     }
   };
 
@@ -120,13 +99,13 @@ export default function EventManagement() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     if (editingEvent) {
-      setEvents(events.map(ev => ev.id === editingEvent.id ? { ...editingEvent, ...form } : ev));
-      alert("Cập nhật sự kiện thành công!");
+      const result = updateEvent(editingEvent.id, form, user?.role);
+      showNotification(result.message, result.success ? 'success' : 'error');
     } else {
-      const newEvent = { ...form, id: Date.now() };
-      setEvents([...events, newEvent]);
-      alert("Tạo sự kiện mới thành công!");
+      const result = createEvent(form, user?.role, user?.id);
+      showNotification(result.message, result.success ? 'success' : 'info');
     }
     closeModal();
   };
@@ -145,9 +124,9 @@ export default function EventManagement() {
 
           <div className="tabs-row">
             <div className="events-tabs">
-              <button className={`event-tab ${activeTab === "upcoming" ? "active" : ""}`} onClick={() => setActiveTab("upcoming")}>Sắp diễn ra</button>
-              <button className={`event-tab ${activeTab === "ongoing" ? "active" : ""}`} onClick={() => setActiveTab("ongoing")}>Đang diễn ra</button>
-              <button className={`event-tab ${activeTab === "completed" ? "active" : ""}`} onClick={() => setActiveTab("completed")}>Đã hoàn thành</button>
+              <button className={`event-tab ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>Tất cả</button>
+              <button className={`event-tab ${activeTab === "approved" ? "active" : ""}`} onClick={() => setActiveTab("approved")}>Đã duyệt</button>
+              <button className={`event-tab ${activeTab === "pending" ? "active" : ""}`} onClick={() => setActiveTab("pending")}>Chờ duyệt</button>
             </div>
           </div>
 
@@ -176,33 +155,27 @@ export default function EventManagement() {
                       <a href="#" className="event-title" onClick={handlePosts}>{event.title}</a>
                       <span className="event-date">{event.date}</span>
                     </div>
-                    <div className="event-location">📍 {event.location}</div>
-                    <div className="event-desc">{event.desc}</div>
+                    <div className="event-location">📍 {event.location || 'Chưa cập nhật'}</div>
+                    <div className="event-desc">{event.description}</div>
                     <div className="event-tags">
-                      <span className={`event-status ${event.status}`}>
-                        {event.status === "upcoming"
-                          ? "Sắp diễn ra"
-                          : event.status === "ongoing"
-                          ? "Đang diễn ra"
-                          : "Đã hoàn thành"}
+                      <span className={`event-status ${event.approvalStatus === 'approved' ? 'ongoing' : 'upcoming'}`}>
+                        {event.approvalStatus === 'approved' ? '✓ Đã duyệt' : '⏳ Chờ duyệt'}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: '#666', marginLeft: '8px' }}>
+                        {event.attendees || 0} người tham gia
                       </span>
                     </div>
 
                     <div className="event-actions">
-                      {event.status === "upcoming" && (
+                      {user?.role === 'admin' || event.approvalStatus === 'approved' ? (
                         <>
                           <button className="event-edit-btn" onClick={(e) => handleEdit(e, event)}>Sửa</button>
                           <button className="event-delete-btn" onClick={(e) => handleDelete(e, event.id)}>Xóa</button>
-                          <button className="event-approve-btn" onClick={handleApprove}>Duyệt thành viên</button>
                         </>
-                      )}
-
-                      {(event.status === "ongoing") && (
-                        <button className="event-view-btn" onClick={handleViewList}>Xem danh sách</button>
-                      )}
-
-                      {(event.status === "completed") && (
-                        <button className="event-view-btn" onClick={handleViewCompleted}>Xem danh sách</button>
+                      ) : (
+                        <span style={{ fontSize: '0.9rem', color: '#999', fontStyle: 'italic' }}>
+                          Đang chờ admin phê duyệt...
+                        </span>
                       )}
                     </div>
                   </div>
@@ -249,8 +222,9 @@ export default function EventManagement() {
               <input name="title" required placeholder="Tên sự kiện" value={form.title} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
               <input name="date" required type="date" value={form.date} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
               <input name="location" placeholder="Địa điểm" value={form.location} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <textarea name="desc" placeholder="Mô tả sự kiện" rows={3} value={form.desc} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+              <textarea name="description" placeholder="Mô tả sự kiện" rows={3} value={form.description} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
               <input name="image" placeholder="Link ảnh sự kiện" value={form.image} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
+              <input name="attendees" type="number" min="0" placeholder="Số lượng người tham gia dự kiến" value={form.attendees} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
                 <button type="button" onClick={closeModal} className="share-btn" style={{ padding: '8px 12px' }}>Hủy</button>

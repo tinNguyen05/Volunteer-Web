@@ -3,8 +3,10 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import '../styles/Hero.css'
 import ServiceCard from '../components/ui/ServiceCard'
 import EventCard from '../components/ui/EventCard'
+import { useEvents } from '../contexts/EventContext'
 
 export default function Hero() {
+  const { approvedEvents } = useEvents()
   const [highlightedWord, setHighlightedWord] = useState('Together')
   const [currentEventIndex, setCurrentEventIndex] = useState(0)
   const [eventsPerPage, setEventsPerPage] = useState(3)
@@ -30,60 +32,8 @@ export default function Hero() {
     }
   }
 
-  // All events data
-  const allEvents = [
-    {
-      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop",
-      date: "2025-11-20",
-      title: "Dọn rác bãi biển",
-      description: "Cùng nhau làm sạch bãi biển Mỹ Khê.",
-      attendees: "45",
-      link: "#"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&fit=crop",
-      date: "2025-12-15",
-      title: "Trồng cây xanh tại trường",
-      description: "Chương trình trồng 500 cây xanh.",
-      attendees: "120",
-      link: "#"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1469571486292-0ba52a96ae4a?w=400&fit=crop",
-      date: "2025-11-25",
-      title: "Phát quà cho trẻ em",
-      description: "Tặng quà trung thu cho trẻ em khó khăn.",
-      attendees: "80",
-      link: "#"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&fit=crop",
-      date: "2025-11-30",
-      title: "Hiến máu nhân đạo",
-      description: "Chiến dịch hiến máu cứu người.",
-      attendees: "95",
-      link: "#"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1509099863731-ef4bff19e808?w=400&fit=crop",
-      date: "2025-12-05",
-      title: "Xây nhà tình thương",
-      description: "Xây dựng nhà cho người nghèo.",
-      attendees: "60",
-      link: "#"
-    },
-    {
-      image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400&fit=crop",
-      date: "2025-12-10",
-      title: "Dạy học miễn phí",
-      description: "Dạy học cho trẻ em vùng cao.",
-      attendees: "75",
-      link: "#"
-    }
-  ]
-
-  // Filter out expired events (events before today)
-  const activeEvents = allEvents.filter(event => {
+  // Filter out expired events (events before today) from approved events
+  const activeEvents = approvedEvents.filter(event => {
     const eventDate = new Date(event.date)
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Reset time to start of day
