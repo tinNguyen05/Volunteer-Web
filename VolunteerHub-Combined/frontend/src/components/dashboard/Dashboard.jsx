@@ -64,18 +64,25 @@ function Dashboard() {
         }
       }
 
-      // Fetch trending/upcoming events
-      const eventsResponse = await getTrendingEvents();
-      if (eventsResponse.success && eventsResponse.data.length > 0) {
-        const mapped = eventsResponse.data.slice(0, 3).map(event => ({
-          id: event._id,
-          title: event.title,
-          description: event.description?.substring(0, 60) + '...',
-          attendees: event.registrationsCount || 0,
-          date: new Date(event.date).toLocaleDateString('vi-VN'),
-          badge: event.isNew ? 'Mới' : (event.isFeatured ? 'Nổi bật' : 'Mới')
-        }));
-        setUpcomingEvents(mapped);
+      // Fetch approved upcoming events from backend
+      const { getAllEvents } = await import('../../services/eventService');
+      const eventsResponse = await getAllEvents({ status: 'approved' });
+      if (eventsResponse.success && eventsResponse.data.events) {
+        // Filter only upcoming events and take first 3
+        const today = new Date();
+        const upcoming = eventsResponse.data.events
+          .filter(event => new Date(event.date) >= today)
+          .slice(0, 3)
+          .map(event => ({
+            id: event._id,
+            title: event.title,
+            description: event.description?.substring(0, 60) + '...',
+            attendees: event.registeredVolunteers?.length || 0,
+            date: new Date(event.date).toLocaleDateString('vi-VN'),
+            badge: 'Mới',
+            location: event.location
+          }));
+        setUpcomingEvents(upcoming);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

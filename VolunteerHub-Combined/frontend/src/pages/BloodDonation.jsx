@@ -1,17 +1,32 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { registerBloodDonation, getBloodStatistics } from '../services/bloodDonationService'
+import { showNotification } from '../services/toastService'
 import '../styles/BloodDonation.css'
 
 export default function BloodDonation() {
   const [donorFormData, setDonorFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
+    donorName: '',
+    donorEmail: '',
+    donorPhone: '',
     bloodType: '',
-    lastDonation: '',
-    availability: ''
+    preferredEventDate: '',
+    medicalHistory: ''
   })
 
   const [showDonorConfirmation, setShowDonorConfirmation] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [statistics, setStatistics] = useState(null)
+
+  useEffect(() => {
+    fetchStatistics()
+  }, [])
+
+  const fetchStatistics = async () => {
+    const response = await getBloodStatistics()
+    if (response.success) {
+      setStatistics(response.data.statistics)
+    }
+  }
 
   const upcomingEvents = [
     {
@@ -53,20 +68,44 @@ export default function BloodDonation() {
     }))
   }
 
-  const handleDonorSubmit = (e) => {
+  const handleDonorSubmit = async (e) => {
     e.preventDefault()
-    setShowDonorConfirmation(true)
-    setTimeout(() => {
-      setShowDonorConfirmation(false)
-      setDonorFormData({
-        name: '',
-        email: '',
-        phone: '',
-        bloodType: '',
-        lastDonation: '',
-        availability: ''
-      })
-    }, 3000)
+    
+    if (!donorFormData.donorName || !donorFormData.donorEmail || !donorFormData.donorPhone || 
+        !donorFormData.bloodType || !donorFormData.preferredEventDate) {
+      showNotification('Vui lòng điền đầy đủ thông tin', 'error')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const response = await registerBloodDonation(donorFormData)
+      
+      if (response.success) {
+        setShowDonorConfirmation(true)
+        showNotification('Đăng ký hiến máu thành công! Chúng tôi sẽ liên hệ sớm.', 'success')
+        
+        setTimeout(() => {
+          setShowDonorConfirmation(false)
+          setDonorFormData({
+            donorName: '',
+            donorEmail: '',
+            donorPhone: '',
+            bloodType: '',
+            preferredEventDate: '',
+            medicalHistory: ''
+          })
+        }, 3000)
+        
+        fetchStatistics()
+      } else {
+        showNotification(response.error, 'error')
+      }
+    } catch (error) {
+      showNotification('Đăng ký hiến máu thất bại', 'error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const cardVariants = {
@@ -203,8 +242,8 @@ export default function BloodDonation() {
                   <label className="form-label">Họ và tên *</label>
                   <input
                     type="text"
-                    name="name"
-                    value={donorFormData.name}
+                    name="donorName"
+                    value={donorFormData.donorName}
                     onChange={handleDonorChange}
                     placeholder="Tên của bạn"
                     required
@@ -216,8 +255,8 @@ export default function BloodDonation() {
                   <label className="form-label">Email *</label>
                   <input
                     type="email"
-                    name="email"
-                    value={donorFormData.email}
+                    name="donorEmail"
+                    value={donorFormData.donorEmail}
                     onChange={handleDonorChange}
                     placeholder="email@example.com"
                     required
@@ -229,8 +268,8 @@ export default function BloodDonation() {
                   <label className="form-label">Số điện thoại *</label>
                   <input
                     type="tel"
-                    name="phone"
-                    value={donorFormData.phone}
+                    name="donorPhone"
+                    value={donorFormData.donorPhone}
                     onChange={handleDonorChange}
                     placeholder="+84 123 456 789"
                     required
@@ -255,30 +294,28 @@ export default function BloodDonation() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Ngày hiến máu gần nhất</label>
-                  <input
-                    type="date"
-                    name="lastDonation"
-                    value={donorFormData.lastDonation}
+                  <label className="form-label">Tiền sử bệnh lý (nếu có)</label>
+                  <textarea
+                    name="medicalHistory"
+                    value={donorFormData.medicalHistory}
                     onChange={handleDonorChange}
+                    placeholder="Ghi chú về tình trạng sức khỏe..."
                     className="form-input"
+                    rows="3"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Sự kiện hiến máu ưa thích *</label>
-                  <select
-                    name="availability"
-                    value={donorFormData.availability}
+                  <label className="form-label">Ngày mong muốn hiến máu *</label>
+                  <input
+                    type="date"
+                    name="preferredEventDate"
+                    value={donorFormData.preferredEventDate}
                     onChange={handleDonorChange}
                     required
-                    className="form-select"
-                  >
-                    <option value="">Chọn ngày</option>
-                    <option value="nov25">25 tháng 11, 2025</option>
-                    <option value="dec10">10 tháng 12, 2025</option>
-                    <option value="dec28">28 tháng 12, 2025</option>
-                  </select>
+                    className="form-input"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
                 </div>
 
                 <button 

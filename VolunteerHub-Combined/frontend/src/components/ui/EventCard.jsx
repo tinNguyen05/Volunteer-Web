@@ -1,6 +1,9 @@
+import { useNavigate } from 'react-router-dom'
 import './EventCard.css'
 
-export default function EventCard({ image, date, title, description, attendees, link }) {
+export default function EventCard({ eventId, image, date, title, description, attendees, link }) {
+  const navigate = useNavigate()
+  
   const formatDate = (dateStr) => {
     const date = new Date(dateStr)
     return date.toLocaleDateString('vi-VN', {
@@ -8,6 +11,15 @@ export default function EventCard({ image, date, title, description, attendees, 
       month: '2-digit',
       year: 'numeric'
     })
+  }
+
+  const handleViewDetail = (e) => {
+    e.preventDefault()
+    if (eventId) {
+      navigate(`/eventPosts/${eventId}`)
+    } else if (link) {
+      window.location.href = link
+    }
   }
 
   return (
@@ -28,9 +40,9 @@ export default function EventCard({ image, date, title, description, attendees, 
             <span className="attendees-icon">👥</span>
             <span className="attendees-count">{attendees || '0'} người</span>
           </div>
-          <a href={link || '#'} className="event-link">
+          <button onClick={handleViewDetail} className="event-link">
             Xem Chi Tiết →
-          </a>
+          </button>
         </div>
       </div>
     </div>

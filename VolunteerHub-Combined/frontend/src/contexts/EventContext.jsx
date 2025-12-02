@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { getAllEvents } from '../services/eventService'
 
 const EventContext = createContext()
 
@@ -11,7 +12,7 @@ export const useEvents = () => {
 }
 
 export const EventProvider = ({ children }) => {
-  // Approved events (visible to everyone)
+  // Approved events (visible to everyone) - initially empty, will fetch from backend
   const [approvedEvents, setApprovedEvents] = useState(() => {
     const stored = localStorage.getItem('vh_approved_events')
     return stored ? JSON.parse(stored) : [
@@ -101,6 +102,34 @@ export const EventProvider = ({ children }) => {
     const stored = localStorage.getItem('vh_pending_events')
     return stored ? JSON.parse(stored) : []
   })
+
+  // Fetch events from backend on mount
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await getAllEvents({ status: 'approved' })
+        if (response.success && response.data.events) {
+          const mapped = response.data.events.map(event => ({
+            id: event._id,
+            image: event.image || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop',
+            date: event.date,
+            title: event.title,
+            description: event.description,
+            attendees: (event.registeredVolunteers?.length || 0).toString(),
+            location: event.location,
+            createdBy: event.createdBy?._id || event.createdBy,
+            createdAt: event.createdAt,
+            approved: true
+          }))
+          setApprovedEvents(mapped)
+          localStorage.setItem('vh_approved_events', JSON.stringify(mapped))
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      }
+    }
+    fetchEvents()
+  }, [])
 
   // Sync to localStorage
   useEffect(() => {

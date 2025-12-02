@@ -32,6 +32,7 @@ function Sidebar() {
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: '🏠', to: '/dashboard' },
           { key: 'events', label: 'Quản lý sự kiện', icon: '🛠️', to: '/manager/events' },
+          { key: 'blood-donations', label: 'Quản lý hiến máu', icon: '🩸', to: '/admin/blood-donations' },
         ]
       }
     ],
@@ -48,6 +49,7 @@ function Sidebar() {
         items: [
           { key: 'user-management', label: 'Quản lý Manager', icon: '👥', to: '/admin/users' },
           { key: 'volunteer-management', label: 'Quản lý Volunteer', icon: '👤', to: '/admin/volunteers' },
+          { key: 'blood-donations', label: 'Quản lý hiến máu', icon: '🩸', to: '/admin/blood-donations' },
           { key: 'export-data', label: 'Xuất dữ liệu', icon: '📊', to: '/admin/export' },
         ]
       }

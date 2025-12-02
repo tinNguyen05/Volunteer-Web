@@ -4,14 +4,22 @@ import '../styles/Hero.css'
 import ServiceCard from '../components/ui/ServiceCard'
 import EventCard from '../components/ui/EventCard'
 import { useEvents } from '../contexts/EventContext'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Hero() {
   const { approvedEvents } = useEvents()
+  const { user, openAuth } = useAuth()
   const [highlightedWord, setHighlightedWord] = useState('Together')
   const [currentEventIndex, setCurrentEventIndex] = useState(0)
   const [eventsPerPage, setEventsPerPage] = useState(3)
 
   const handleJoinNow = () => {
+    // Nếu chưa đăng nhập, mở modal đăng nhập
+    if (!user) {
+      openAuth('login')
+      return
+    }
+    // Nếu đã đăng nhập, scroll đến phần member (nếu có)
     const element = document.getElementById('member')
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -110,14 +118,16 @@ export default function Hero() {
           </p>
 
           {/* Call-to-Action Buttons - Enhanced */}
-          <div className="hero-buttons">
-            <button 
-              className="btn btn-primary btn-lg" 
-              onClick={handleJoinNow}
-            >
-              <span>Tham Gia Ngay</span>
-              <span className="btn-icon">→</span>
-            </button>
+          <div className="hero-buttons" style={{ justifyContent: user ? 'center' : 'flex-start' }}>
+            {!user && (
+              <button 
+                className="btn btn-primary btn-lg" 
+                onClick={handleJoinNow}
+              >
+                <span>Tham Gia Ngay</span>
+                <span className="btn-icon">→</span>
+              </button>
+            )}
             <button 
               className="btn btn-outline btn-lg" 
               onClick={handleLearnMore}
@@ -197,7 +207,8 @@ export default function Hero() {
             <div className="events-grid">
               {visibleEvents.map((event, index) => (
                 <EventCard
-                  key={index}
+                  key={event.id || index}
+                  eventId={event.id}
                   image={event.image}
                   date={event.date}
                   title={event.title}

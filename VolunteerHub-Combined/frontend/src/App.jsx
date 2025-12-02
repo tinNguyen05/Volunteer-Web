@@ -15,7 +15,6 @@ import AuthModal from './components/AuthModal'
 import Hero from './pages/Hero'
 import BloodDonation from './pages/BloodDonation'
 import About from './pages/About'
-import TestimonialSlider from './components/ui/TestimonialSlider'
 import Footer from './components/Footer'
 
 // Import auth pages
@@ -39,6 +38,7 @@ import EventApproval from './pages/admin/EventApproval'
 import UserManagement from './pages/admin/UserManagement'
 import VolunteerListAdmin from './pages/admin/VolunteerList'
 import ExportData from './pages/admin/ExportData'
+import BloodDonationManagement from './pages/admin/BloodDonationManagement'
 
 // Import NotFound
 import NotFound from './pages/notfound/NotFound'
@@ -101,9 +101,6 @@ function LandingPage() {
 
         {/* About Section */}
         <About />
-
-        {/* Testimonials Section */}
-        <TestimonialSlider />
 
         {/* Contact/Footer Section */}
         <section id="contact">
@@ -256,6 +253,14 @@ function AppRouter() {
         element={
           <RoleRoute allowedRoles={['admin']}>
             <ExportData />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/blood-donations" 
+        element={
+          <RoleRoute allowedRoles={['admin', 'manager']}>
+            <BloodDonationManagement />
           </RoleRoute>
         } 
       />

@@ -207,6 +207,37 @@ const deletePost = async (req, res) => {
   }
 };
 
+// Delete Comment
+const deleteComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      return errorResponse(res, 404, 'Comment not found');
+    }
+
+    // Check authorization
+    if (comment.author.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return errorResponse(res, 403, 'Forbidden: You cannot delete this comment');
+    }
+
+    comment.isActive = false;
+    await comment.save();
+
+    // Update comment count
+    const post = await Post.findById(comment.post);
+    if (post) {
+      post.commentsCount = Math.max(0, post.commentsCount - 1);
+      await post.save();
+    }
+
+    successResponse(res, 'Comment deleted successfully');
+  } catch (error) {
+    errorResponse(res, 500, 'Failed to delete comment: ' + error.message);
+  }
+};
+
 module.exports = {
   createPost,
   getPostsByEvent,
@@ -214,4 +245,5 @@ module.exports = {
   addComment,
   getCommentsByPost,
   deletePost,
+  deleteComment,
 };
