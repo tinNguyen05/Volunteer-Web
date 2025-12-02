@@ -13,7 +13,6 @@ import { EventProvider } from './contexts/EventContext'
 import Header from './components/Header'
 import AuthModal from './components/AuthModal'
 import Hero from './pages/Hero'
-import MembershipForm from './pages/MembershipForm'
 import BloodDonation from './pages/BloodDonation'
 import About from './pages/About'
 import TestimonialSlider from './components/ui/TestimonialSlider'
@@ -61,7 +60,7 @@ function LandingPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ['home', 'sukien', 'member', 'blood', 'aboutus', 'contact']
+      const sections = ['home', 'sukien', 'blood', 'aboutus', 'contact']
       const scrollPosition = window.scrollY + 100
 
       for (const section of sections) {
@@ -93,11 +92,6 @@ function LandingPage() {
         {/* Hero Section */}
         <section id="home">
           <Hero />
-        </section>
-
-        {/* Membership Section */}
-        <section id="member">
-          <MembershipForm />
         </section>
 
         {/* Blood Donation Section */}

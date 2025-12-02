@@ -21,7 +21,6 @@ export default function Header({ setCurrentPage, currentPage }) {
   const navItems = [
     { id: 'home', label: 'Trang chủ' },
     { id: 'sukien', label: 'Sự kiện' },
-    { id: 'member', label: 'Trở thành thành viên' },
     { id: 'blood', label: 'Hiến máu' },
     { id: 'aboutus', label: 'Về chúng tôi' },
     { id: 'contact', label: 'Liên hệ' },
