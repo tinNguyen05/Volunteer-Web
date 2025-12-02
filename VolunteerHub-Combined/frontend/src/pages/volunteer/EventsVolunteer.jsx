@@ -1,106 +1,109 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/common/Sidebar";
+import { getAllEvents, registerForEvent } from "../../services/eventService";
+import { showNotification } from "../../services/toastService";
 import '../../assets/styles/events.css'
 
 export default function EventsVolunteer() {
   const navigate = useNavigate();
-    const handlePosts = () => {
-      navigate("/eventPosts");
-    };
-    const [activeTab, setActiveTab] = useState("upcoming");
+  const handlePosts = (eventId) => {
+    navigate(`/eventPosts/${eventId}`);
+  };
   
-    const events = [
-      {
-        id: 1,
-        title: "Dọn rác bãi biển",
-        date: "20/11/2025",
-        location: "Đà Nẵng",
-        desc: "Cùng nhau làm sạch bãi biển Mỹ Khê.",
-        status: "upcoming",
-        attendees: "45",
-        image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop"
-      },
-      {
-        id: 2,
-        title: "Trồng cây xanh tại trường",
-        date: "15/11/2025",
-        location: "Hà Nội",
-        desc: "Chương trình trồng 500 cây xanh.",
-        status: "upcoming",
-        attendees: "120",
-        image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&fit=crop"
-      },
-      {
-        id: 3,
-        title: "Phát quà cho trẻ em",
-        date: "01/10/2025",
-        location: "TP. Hồ Chí Minh",
-        desc: "Tặng quà trung thu cho trẻ em khó khăn.",
-        status: "completed",
-        attendees: "80",
-        image: "https://images.unsplash.com/photo-1469571486292-0ba52a96ae4a?w=400&fit=crop"
-      },
-    ];
+  const [activeTab, setActiveTab] = useState("upcoming");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [registeredEventIds, setRegisteredEventIds] = useState([]);
   
-    const filteredEvents = events.filter((e) => e.status === activeTab);
+  // Fetch events from backend
+  useEffect(() => {
+    fetchEvents();
+  }, []);
   
-    const [registeringEvent, setRegisteringEvent] = useState(null);
-    const [showRegister, setShowRegister] = useState(false);
-    const [form, setForm] = useState({
-      name: "",
-      email: "",
-      phone: "",
-      note: "",
-    });
-    const [registrations, setRegistrations] = useState({});
-    const [registeredEvents, setRegisteredEvents] = useState([]);
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllEvents({ status: 'approved' });
+      if (response.success) {
+        // Map backend data to frontend format
+        const mappedEvents = response.data.events.map(event => ({
+          id: event._id,
+          title: event.title,
+          date: new Date(event.date).toLocaleDateString('vi-VN'),
+          location: event.location,
+          desc: event.description,
+          status: getEventStatus(event.date, event.status),
+          attendees: event.registeredVolunteers?.length || 0,
+          image: event.image,
+          capacity: event.capacity
+        }));
+        setEvents(mappedEvents);
+      }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      showNotification('Không thể tải danh sách sự kiện', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
   
-    const handleRegister = (event) => {
-      setRegisteringEvent(event);
-      setForm({ name: "", email: "", phone: "", note: "" });
-      setShowRegister(true);
-    };
-  
-    const closeRegister = () => {
-      setShowRegister(false);
-      setRegisteringEvent(null);
-    };
-  
-    const onFormChange = (e) => {
-      setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
-    };
-  
-    const submitRegistration = (e) => {
-      e.preventDefault();
-      if (!registeringEvent) return;
-      const payload = {
-        ...form,
-        eventId: registeringEvent.id,
-        submittedAt: new Date().toISOString(),
-      };
-      setRegistrations((r) => {
-        const list = (r[registeringEvent.id] || []).concat(payload);
-        return { ...r, [registeringEvent.id]: list };
-      });
-      setRegisteredEvents((prev) =>
-        prev.includes(registeringEvent.id) ? prev : [...prev, registeringEvent.id]
-      );
-      alert("Đăng ký đã gửi. Cảm ơn bạn!");
-      closeRegister();
-    };
-  
-    const cancelRegistration = (eventId) => {
-      setRegisteredEvents((prev) => prev.filter((id) => id !== eventId));
-      setRegistrations((r) => {
-        const list = (r[eventId] || []).slice(0, -1);
-        return { ...r, [eventId]: list };
-      });
-      alert("Bạn đã hủy tham gia.");
-      if (registeringEvent && registeringEvent.id === eventId) closeRegister();
-    };
+  // Determine event status based on date
+  const getEventStatus = (eventDate, dbStatus) => {
+    if (dbStatus === 'completed') return 'completed';
+    if (dbStatus === 'ongoing') return 'ongoing';
     
-  return (
+    const today = new Date();
+    const eventDay = new Date(eventDate);
+    
+    if (eventDay > today) return 'upcoming';
+    if (eventDay.toDateString() === today.toDateString()) return 'ongoing';
+    return 'completed';
+  };
+  
+  const filteredEvents = events.filter((e) => e.status === activeTab);
+  
+  const [registeringEvent, setRegisteringEvent] = useState(null);
+  const [showRegister, setShowRegister] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleRegister = (event) => {
+    setRegisteringEvent(event);
+    setShowRegister(true);
+  };
+
+  const closeRegister = () => {
+    setShowRegister(false);
+    setRegisteringEvent(null);
+  };
+
+  const submitRegistration = async (e) => {
+    e.preventDefault();
+    if (!registeringEvent || submitting) return;
+    
+    try {
+      setSubmitting(true);
+      const response = await registerForEvent(registeringEvent.id);
+      
+      if (response.success) {
+        showNotification('Đăng ký thành công! Chờ quản lý phê duyệt.', 'success');
+        setRegisteredEventIds(prev => [...prev, registeringEvent.id]);
+        closeRegister();
+        // Refresh events to get updated attendee count
+        fetchEvents();
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'Đăng ký thất bại';
+      showNotification(message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const cancelRegistration = async (eventId) => {
+    // TODO: Implement cancel registration API if needed
+    alert("Chức năng hủy đăng ký sẽ được bổ sung sau.");
+  };  return (
     <div className="EventsVolunteer-container">
       <Sidebar />
       <main className="main-content">
@@ -134,19 +137,35 @@ export default function EventsVolunteer() {
         </div>
 
         <div id="events-area">
-          {filteredEvents.length === 0 ? (
+          {loading ? (
+            <div className="loading">Đang tải danh sách sự kiện...</div>
+          ) : filteredEvents.length === 0 ? (
             <div className="loading">Không có sự kiện nào.</div>
           ) : (
             <div className="event-list">
               {filteredEvents.map((event) => (
                 <div key={event.id} className="event-card event-vol">
+                  {event.image && (
+                    <div style={{ marginBottom: '12px', borderRadius: '8px', overflow: 'hidden' }}>
+                      <img 
+                        src={event.image} 
+                        alt={event.title}
+                        style={{ 
+                          width: '100%', 
+                          height: '160px', 
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                      />
+                    </div>
+                  )}
                   <div className="event-title-row">
-                    <a href="#" className="event-title" onClick={handlePosts}>
+                    <a href="#" className="event-title" onClick={(e) => { e.preventDefault(); handlePosts(event.id); }}>
                       {event.title}
                     </a>
                     <span className="event-date">{event.date}</span>
                   </div>
-                  <div className="event-location">{event.location}</div>
+                  <div className="event-location">📍 {event.location}</div>
                   <div className="event-desc">{event.desc}</div>
                   <div className="event-tags">
                     <span className={`event-status ${event.status}`}>
@@ -154,11 +173,14 @@ export default function EventsVolunteer() {
                         : event.status === "ongoing" ? "Đang diễn ra"
                         : "Đã hoàn thành"}
                     </span>
+                    <span style={{ fontSize: '0.85rem', color: '#666', marginLeft: '8px' }}>
+                      👥 {event.attendees}/{event.capacity || '∞'}
+                    </span>
                   </div>
 
                   {event.status === "upcoming" && (
                     <div className="event-actions" style={{ marginTop: 12 }}>
-                      {!registeredEvents.includes(event.id) ? (
+                      {!registeredEventIds.includes(event.id) ? (
                         <button className="event-join-btn" onClick={() => handleRegister(event)} type="button">
                           Tham gia
                         </button>
@@ -233,37 +255,15 @@ export default function EventsVolunteer() {
             <form onSubmit={submitRegistration}
               style={{ display: "flex", flexDirection: "column", gap: 10 }}
             >
-              <input name="name" required placeholder="Họ và tên" value={form.name} onChange={onFormChange}
-                style={{
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                }}
-              />
+              <div style={{ padding: '12px', background: '#f0f9ff', borderRadius: '8px', fontSize: '14px', color: '#0369a1' }}>
+                ℹ️ Bạn đang đăng ký tham gia sự kiện này. Quản lý sẽ xem xét và phê duyệt đăng ký của bạn.
+              </div>
 
-              <input name="email" placeholder="Email" type="email" value={form.email} onChange={onFormChange}
-                style={{
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                }}
-              />
-
-              <input name="phone" placeholder="Số điện thoại" value={form.phone} onChange={onFormChange}
-                style={{
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                }}
-              />
-
-              <textarea name="note" placeholder="Ghi chú (tùy chọn)" rows={3} value={form.note} onChange={onFormChange}
-                style={{
-                  padding: 10,
-                  borderRadius: 8,
-                  border: "1px solid #ddd",
-                }}
-              />
+              <div style={{ marginTop: 8, fontSize: 13, color: "#666" }}>
+                <strong>Sức chứa:</strong> {registeringEvent.capacity || 'Không giới hạn'} người
+                <br />
+                <strong>Đã đăng ký:</strong> {registeringEvent.attendees} người
+              </div>
 
               <div
                 style={{
@@ -273,19 +273,15 @@ export default function EventsVolunteer() {
                   marginTop: 6,
                 }}
               >
-                <button type="button" onClick={closeRegister} className="share-btn" style={{ padding: "8px 12px" }}>
+                <button type="button" onClick={closeRegister} className="share-btn" style={{ padding: "8px 12px" }} disabled={submitting}>
                   Hủy
                 </button>
 
-                <button type="submit" className="join-btn" style={{ padding: "8px 14px" }}>
-                  Gửi đăng ký
+                <button type="submit" className="join-btn" style={{ padding: "8px 14px" }} disabled={submitting}>
+                  {submitting ? 'Đang gửi...' : 'Xác nhận đăng ký'}
                 </button>
               </div>
             </form>
-
-            <div style={{ marginTop: 14, fontSize: 13, color: "#555" }}>
-              Đã có {(registrations[registeringEvent.id] || []).length} đăng ký trước.
-            </div>
           </div>
         </div>
       )}

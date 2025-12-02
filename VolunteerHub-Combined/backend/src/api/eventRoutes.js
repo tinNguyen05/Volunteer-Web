@@ -27,8 +27,11 @@ router.post('/create', authMiddleware, roleMiddleware(['manager', 'admin']), eve
 router.put('/:id', authMiddleware, eventValidation, validationMiddleware, eventController.updateEvent);
 router.post('/register', authMiddleware, eventController.registerForEvent);
 router.get('/user/registered', authMiddleware, eventController.getUserRegisteredEvents);
+router.get('/user/history', authMiddleware, eventController.getParticipationHistory);
 
 // Admin/Manager routes
 router.post('/:eventId/approve', authMiddleware, roleMiddleware(['manager', 'admin']), eventController.approveEvent);
+router.put('/registration/:registrationId/status', authMiddleware, roleMiddleware(['manager', 'admin']), eventController.updateRegistrationStatus);
+router.post('/:eventId/complete', authMiddleware, roleMiddleware(['manager', 'admin']), eventController.completeEvent);
 
 module.exports = router;

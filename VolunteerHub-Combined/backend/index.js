@@ -10,6 +10,9 @@ const eventRoutes = require("./src/api/eventRoutes");
 const bloodDonationRoutes = require("./src/api/bloodDonationRoutes");
 const membershipRoutes = require("./src/api/membershipRoutes");
 const oauthRoutes = require("./src/api/oauthRoutes");
+const postRoutes = require("./src/api/postRoutes");
+const notificationRoutes = require("./src/api/notificationRoutes");
+const dashboardRoutes = require("./src/api/dashboardRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +48,9 @@ app.use("/api/auth", oauthRoutes); // OAuth routes
 app.use("/api/events", eventRoutes);
 app.use("/api/blood-donation", bloodDonationRoutes);
 app.use("/api/membership", membershipRoutes);
+app.use("/api/posts", postRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "Server is running", timestamp: new Date() });
@@ -59,6 +65,9 @@ app.get("/", (req, res) => {
       events: "/api/events",
       bloodDonation: "/api/blood-donation",
       membership: "/api/membership",
+      posts: "/api/posts",
+      notifications: "/api/notifications",
+      dashboard: "/api/dashboard",
     },
   });
 });

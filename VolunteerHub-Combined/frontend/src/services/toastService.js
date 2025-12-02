@@ -76,4 +76,52 @@ export const toastMessages = {
   notFound: 'Không tìm thấy dữ liệu.',
 };
 
+/**
+ * Show toast notification
+ * @param {string} message - Message to display
+ * @param {string} type - Type: success, error, warning, info
+ */
+export const showNotification = (message, type = 'info') => {
+  // Check if NotificationContext exists
+  if (window.showToast) {
+    window.showToast(message, type);
+  } else {
+    // Fallback to browser alert
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Use browser notification if available
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(type === 'error' ? '❌ Lỗi' : type === 'success' ? '✅ Thành công' : 'ℹ️ Thông báo', {
+        body: message,
+        icon: '/logo.png',
+        tag: 'toast-notification'
+      });
+    } else {
+      // Create simple toast element
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 24px;
+        background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-size: 14px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    }
+  }
+};
+
 export default toastMessages;

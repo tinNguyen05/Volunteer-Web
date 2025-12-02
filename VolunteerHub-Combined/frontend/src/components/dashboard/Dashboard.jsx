@@ -1,33 +1,99 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import Sidebar from '../../components/common/Sidebar';
+import { getDashboardStats, getTrendingEvents } from '../../services/dashboardService';
 import '../../assets/styles/home.css';
 
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [stats, setStats] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [user?.role]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch statistics
+      const statsResponse = await getDashboardStats();
+      if (statsResponse.success) {
+        const data = statsResponse.data;
+        
+        // Map stats based on user role
+        const mappedStats = [];
+        
+        if (user?.role === 'volunteer') {
+          mappedStats.push(
+            { id: 1, label: 'Sự kiện đã tham gia', value: data.myEventsCount || 0, icon: '📅', color: '#10b981' },
+            { id: 2, label: 'Giờ tình nguyện', value: `${data.myHours || 0}h`, icon: '⏰', color: '#f59e0b' },
+            { id: 3, label: 'Đang chờ duyệt', value: data.pendingRegistrations || 0, icon: '⏳', color: '#3b82f6' }
+          );
+        } else if (user?.role === 'manager') {
+          mappedStats.push(
+            { id: 1, label: 'Sự kiện quản lý', value: data.totalEvents || 0, icon: '📋', color: '#10b981' },
+            { id: 2, label: 'Đăng ký mới', value: data.totalRegistrations || 0, icon: '👥', color: '#3b82f6' },
+            { id: 3, label: 'Chờ phê duyệt', value: data.pendingApprovals || 0, icon: '⏳', color: '#f59e0b' }
+          );
+        } else if (user?.role === 'admin') {
+          mappedStats.push(
+            { id: 1, label: 'Tổng người dùng', value: data.totalUsers || 0, icon: '👥', color: '#10b981' },
+            { id: 2, label: 'Tổng sự kiện', value: data.totalEvents || 0, icon: '📅', color: '#3b82f6' },
+            { id: 3, label: 'Tổng đăng ký', value: data.totalRegistrations || 0, icon: '📝', color: '#f59e0b' }
+          );
+        }
+        
+        setStats(mappedStats);
+        
+        // Map recent activities
+        if (data.recentActivities && data.recentActivities.length > 0) {
+          const mapped = data.recentActivities.map((act, idx) => ({
+            id: idx + 1,
+            activity: act.activity || act.description,
+            user: act.user?.name || 'N/A',
+            date: new Date(act.createdAt || act.date).toLocaleDateString('vi-VN'),
+            status: act.status || 'success'
+          }));
+          setRecentActivities(mapped);
+        }
+      }
+
+      // Fetch trending/upcoming events
+      const eventsResponse = await getTrendingEvents();
+      if (eventsResponse.success && eventsResponse.data.length > 0) {
+        const mapped = eventsResponse.data.slice(0, 3).map(event => ({
+          id: event._id,
+          title: event.title,
+          description: event.description?.substring(0, 60) + '...',
+          attendees: event.registrationsCount || 0,
+          date: new Date(event.date).toLocaleDateString('vi-VN'),
+          badge: event.isNew ? 'Mới' : (event.isFeatured ? 'Nổi bật' : 'Mới')
+        }));
+        setUpcomingEvents(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      // Keep mock data as fallback
+      setStats([
+        { id: 1, label: 'Tổng Tình Nguyện Viên', value: '500+', icon: '👥', color: '#10b981' },
+        { id: 2, label: 'Dự Án Hoàn Thành', value: '100+', icon: '✅', color: '#3b82f6' },
+        { id: 3, label: 'Giờ Tình Nguyện', value: '5,000+', icon: '⏰', color: '#f59e0b' },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login');
-  }
-
-  // Mock data for statistics
-  const stats = [
-    { id: 1, label: 'Tổng Tình Nguyện Viên', value: '500+', icon: '👥', color: '#10b981' },
-    { id: 2, label: 'Dự Án Hoàn Thành', value: '100+', icon: '✅', color: '#3b82f6' },
-    { id: 3, label: 'Giờ Tình Nguyện', value: '5,000+', icon: '⏰', color: '#f59e0b' },
-  ];
-
-  // Mock data for recent activities
-  const recentActivities = [
-    { id: 1, activity: 'Đăng ký sự kiện "Mùa hè xanh"', user: 'Nguyễn Văn A', date: '2025-11-14', status: 'success' },
-    { id: 2, activity: 'Hoàn thành "Biển sạch"', user: 'Trần Thị B', date: '2025-11-13', status: 'completed' },
-    { id: 3, activity: 'Đăng ký "Hiến máu nhân đạo"', user: 'Lê Văn C', date: '2025-11-13', status: 'success' },
-    { id: 4, activity: 'Hủy tham gia "Trồng cây"', user: 'Phạm Thị D', date: '2025-11-12', status: 'cancelled' },
-    { id: 5, activity: 'Hoàn thành "Dọn rác bãi biển"', user: 'Hoàng Văn E', date: '2025-11-11', status: 'completed' },
-  ];
+  };
 
   return (
     <div className="dashboard-container">
@@ -131,40 +197,74 @@ function Dashboard() {
             <button className="view-all-btn" onClick={() => navigate('/events')}>Xem tất cả →</button>
           </div>
 
-          <div className="events-grid">
-            <div className="event-card-modern">
-              <div className="event-badge">Mới</div>
-              <h3 className="event-title">Mùa Hè Xanh 2025</h3>
-              <p className="event-description">Chương trình tình nguyện hè dành cho sinh viên</p>
-              <div className="event-meta">
-                <span className="meta-item">👥 45 thành viên</span>
-                <span className="meta-item">📅 20/12/2025</span>
-              </div>
-              <button className="event-join-btn">Tham gia ngay</button>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+              Đang tải...
             </div>
+          ) : upcomingEvents.length > 0 ? (
+            <div className="events-grid">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="event-card-modern">
+                  <div className={`event-badge ${event.badge === 'Nổi bật' ? 'featured' : ''}`}>
+                    {event.badge}
+                  </div>
+                  <h3 className="event-title">{event.title}</h3>
+                  <p className="event-description">{event.description}</p>
+                  <div className="event-meta">
+                    <span className="meta-item">👥 {event.attendees} thành viên</span>
+                    <span className="meta-item">📅 {event.date}</span>
+                  </div>
+                  <button 
+                    className="event-join-btn"
+                    onClick={() => navigate('/events')}
+                  >
+                    Tham gia ngay
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="events-grid">
+              <div className="event-card-modern">
+                <div className="event-badge">Mới</div>
+                <h3 className="event-title">Mùa Hè Xanh 2025</h3>
+                <p className="event-description">Chương trình tình nguyện hè dành cho sinh viên</p>
+                <div className="event-meta">
+                  <span className="meta-item">👥 45 thành viên</span>
+                  <span className="meta-item">📅 20/12/2025</span>
+                </div>
+                <button className="event-join-btn" onClick={() => navigate('/events')}>
+                  Tham gia ngay
+                </button>
+              </div>
 
-            <div className="event-card-modern">
-              <div className="event-badge featured">Nổi bật</div>
-              <h3 className="event-title">Hiến Máu Nhân Đạo</h3>
-              <p className="event-description">Giọt hồng chia sẻ - Yêu thương lan tỏa</p>
-              <div className="event-meta">
-                <span className="meta-item">👥 120 thành viên</span>
-                <span className="meta-item">📅 15/12/2025</span>
+              <div className="event-card-modern">
+                <div className="event-badge featured">Nổi bật</div>
+                <h3 className="event-title">Hiến Máu Nhân Đạo</h3>
+                <p className="event-description">Giọt hồng chia sẻ - Yêu thương lan tỏa</p>
+                <div className="event-meta">
+                  <span className="meta-item">👥 120 thành viên</span>
+                  <span className="meta-item">📅 15/12/2025</span>
+                </div>
+                <button className="event-join-btn" onClick={() => navigate('/events')}>
+                  Tham gia ngay
+                </button>
               </div>
-              <button className="event-join-btn">Tham gia ngay</button>
-            </div>
 
-            <div className="event-card-modern">
-              <div className="event-badge">Mới</div>
-              <h3 className="event-title">Biển Sạch</h3>
-              <p className="event-description">Cùng nhau làm sạch bãi biển Việt Nam</p>
-              <div className="event-meta">
-                <span className="meta-item">👥 80 thành viên</span>
-                <span className="meta-item">📅 10/12/2025</span>
+              <div className="event-card-modern">
+                <div className="event-badge">Mới</div>
+                <h3 className="event-title">Biển Sạch</h3>
+                <p className="event-description">Cùng nhau làm sạch bãi biển Việt Nam</p>
+                <div className="event-meta">
+                  <span className="meta-item">👥 80 thành viên</span>
+                  <span className="meta-item">📅 10/12/2025</span>
+                </div>
+                <button className="event-join-btn" onClick={() => navigate('/events')}>
+                  Tham gia ngay
+                </button>
               </div>
-              <button className="event-join-btn">Tham gia ngay</button>
             </div>
-          </div>
+          )}
         </section>
       </main>
     </div>

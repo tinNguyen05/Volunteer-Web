@@ -4,6 +4,7 @@ import Sidebar from "../../components/common/Sidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useEvents } from "../../contexts/EventContext";
 import { useNotification } from "../../contexts/NotificationContext";
+import { completeEvent } from '../../services/eventService';
 import "../../assets/styles/events.css";
 
 export default function EventManagement() {
@@ -110,6 +111,40 @@ export default function EventManagement() {
     closeModal();
   };
 
+  const handleComplete = async (e, event) => {
+    e.preventDefault();
+    
+    if (!window.confirm(`Xác nhận đánh dấu sự kiện "${event.title}" đã hoàn thành?`)) {
+      return;
+    }
+
+    try {
+      const response = await completeEvent(event.id);
+      if (response.success) {
+        showNotification('✅ Đã đánh dấu sự kiện hoàn thành và gửi thông báo cho tình nguyện viên', 'success');
+        // Optionally refresh events or update local state
+        window.location.reload(); // Simple refresh for now
+      } else {
+        showNotification(response.error || 'Không thể hoàn thành sự kiện', 'error');
+      }
+    } catch (error) {
+      showNotification('Lỗi khi hoàn thành sự kiện', 'error');
+    }
+  };
+
+  const isEventPast = (dateString) => {
+    const eventDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate < today;
+  };
+
+  const canCompleteEvent = (event) => {
+    return event.approvalStatus === 'approved' && 
+           isEventPast(event.date) && 
+           !event.isCompleted;
+  };
+
   return (
     <div className="EventsVolunteer-container">
       <Sidebar />
@@ -167,8 +202,26 @@ export default function EventManagement() {
                     </div>
 
                     <div className="event-actions">
-                      {user?.role === 'admin' || event.approvalStatus === 'approved' ? (
+                      {event.isCompleted ? (
+                        <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 500 }}>
+                          ✓ Đã hoàn thành
+                        </span>
+                      ) : user?.role === 'admin' || event.approvalStatus === 'approved' ? (
                         <>
+                          {canCompleteEvent(event) && (
+                            <button 
+                              className="join-btn" 
+                              onClick={(e) => handleComplete(e, event)}
+                              style={{ 
+                                marginRight: '8px',
+                                background: '#10b981',
+                                fontSize: '0.85rem',
+                                padding: '6px 12px'
+                              }}
+                            >
+                              ✓ Hoàn thành
+                            </button>
+                          )}
                           <button className="event-edit-btn" onClick={(e) => handleEdit(e, event)}>Sửa</button>
                           <button className="event-delete-btn" onClick={(e) => handleDelete(e, event.id)}>Xóa</button>
                         </>

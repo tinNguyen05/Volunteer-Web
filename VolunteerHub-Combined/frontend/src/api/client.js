@@ -253,6 +253,84 @@ class APIClient {
   logout() {
     this.clearToken();
   }
+
+  // Generic HTTP Methods
+  async get(url, options = {}) {
+    const headers = { ...this.getHeaders(), ...options.headers };
+    const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    
+    const queryParams = options.params ? '?' + new URLSearchParams(options.params).toString() : '';
+    
+    const response = await fetch(`${fullUrl}${queryParams}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (options.responseType === 'blob') {
+      return response.blob();
+    }
+    
+    return this.handleResponse(response);
+  }
+
+  async post(url, data, options = {}) {
+    const headers = { ...this.getHeaders(), ...options.headers };
+    const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    
+    const body = headers['Content-Type'] === 'multipart/form-data' 
+      ? data 
+      : JSON.stringify(data);
+    
+    if (headers['Content-Type'] === 'multipart/form-data') {
+      delete headers['Content-Type']; // Let browser set it with boundary
+    }
+    
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers,
+      body,
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async put(url, data, options = {}) {
+    const headers = { ...this.getHeaders(), ...options.headers };
+    const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    
+    const response = await fetch(fullUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async patch(url, data, options = {}) {
+    const headers = { ...this.getHeaders(), ...options.headers };
+    const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    
+    const response = await fetch(fullUrl, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(data),
+    });
+    
+    return this.handleResponse(response);
+  }
+
+  async delete(url, options = {}) {
+    const headers = { ...this.getHeaders(), ...options.headers };
+    const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
+    
+    const response = await fetch(fullUrl, {
+      method: 'DELETE',
+      headers,
+    });
+    
+    return this.handleResponse(response);
+  }
 }
 
 export default new APIClient();

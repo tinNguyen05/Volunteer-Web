@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { initializePushNotifications } from '../services/pushService';
 
 const AuthContext = createContext();
 
@@ -29,7 +30,21 @@ export function AuthProvider({ children }) {
         }
       }
       
-      if (raw) setUser(JSON.parse(raw));
+      if (raw) {
+        const userData = JSON.parse(raw);
+        setUser(userData);
+        
+        // Initialize push notifications for logged-in user
+        if (userData) {
+          setTimeout(() => {
+            initializePushNotifications().then(result => {
+              if (result.success) {
+                console.log('Push notifications initialized');
+              }
+            });
+          }, 2000); // Delay 2s to let app fully load
+        }
+      }
       
       const pending = localStorage.getItem('vh_pending_managers');
       if (pending) setPendingManagers(JSON.parse(pending));
@@ -39,7 +54,7 @@ export function AuthProvider({ children }) {
     } catch { /* ignore */ }
   }, []);
 
-  const login = (userObj) => {
+  const login = async (userObj) => {
     setUser(userObj);
     
     // Lưu vào localStorage
@@ -54,6 +69,21 @@ export function AuthProvider({ children }) {
     document.cookie = `vh_auth=${JSON.stringify(userObj)}; expires=${expires.toUTCString()}; path=/`;
     
     setIsAuthOpen(false); // Đóng modal sau khi đăng nhập
+    
+    // Initialize push notifications after login
+    setTimeout(async () => {
+      try {
+        const result = await initializePushNotifications();
+        if (result.success) {
+          console.log('✅ Push notifications enabled');
+        } else if (result.error === 'Permission not requested') {
+          // User hasn't granted permission yet - that's ok
+          console.log('ℹ️ Push notifications available but not enabled');
+        }
+      } catch (error) {
+        console.error('Push notification initialization error:', error);
+      }
+    }, 1500);
   };
 
   const logout = () => {

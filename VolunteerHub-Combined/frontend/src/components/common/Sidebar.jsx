@@ -48,6 +48,7 @@ function Sidebar() {
         items: [
           { key: 'user-management', label: 'Quản lý Manager', icon: '👥', to: '/admin/users' },
           { key: 'volunteer-management', label: 'Quản lý Volunteer', icon: '👤', to: '/admin/volunteers' },
+          { key: 'export-data', label: 'Xuất dữ liệu', icon: '📊', to: '/admin/export' },
         ]
       }
     ],

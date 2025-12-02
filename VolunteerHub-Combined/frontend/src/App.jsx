@@ -24,7 +24,7 @@ import OAuthCallback from './pages/auth/OAuthCallback'
 
 // Import dashboard & volunteer pages
 import Dashboard from './components/dashboard/Dashboard'
-import EventPosts from './components/post/EventPosts'
+import EventPosts from './pages/volunteer/EventPosts'
 import EventsVolunteer from './pages/volunteer/EventsVolunteer'
 import History from './pages/volunteer/History'
 import Notification from './pages/volunteer/Notification'
@@ -39,6 +39,7 @@ import VolunteerCompleted from './pages/manager/VolunteerCompleted'
 import EventApproval from './pages/admin/EventApproval'
 import UserManagement from './pages/admin/UserManagement'
 import VolunteerListAdmin from './pages/admin/VolunteerList'
+import ExportData from './pages/admin/ExportData'
 
 // Import NotFound
 import NotFound from './pages/notfound/NotFound'
@@ -163,7 +164,7 @@ function AppRouter() {
         } 
       />
       <Route 
-        path="/eventPosts" 
+        path="/eventPosts/:eventId" 
         element={
           <ProtectedRoute>
             <EventPosts />
@@ -253,6 +254,14 @@ function AppRouter() {
         element={
           <RoleRoute allowedRoles={['admin']}>
             <EventApproval />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/export" 
+        element={
+          <RoleRoute allowedRoles={['admin']}>
+            <ExportData />
           </RoleRoute>
         } 
       />
