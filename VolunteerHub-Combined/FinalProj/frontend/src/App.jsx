@@ -1,0 +1,292 @@
+import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import './App.css'
+import './styles/ColorScheme.css'
+import './styles/ProfessionalLayout.css'
+import './styles/animations.css'
+import './styles/Auth.css'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
+import { EventProvider } from './contexts/EventContext'
+
+// Import public pages (landing page)
+import Header from './components/Header'
+import AuthModal from './components/AuthModal'
+import Hero from './pages/Hero'
+import BloodDonation from './pages/BloodDonation'
+import About from './pages/About'
+import Footer from './components/Footer'
+
+// Import auth pages
+import OAuthCallback from './pages/auth/OAuthCallback'
+
+// Import dashboard & volunteer pages
+import Dashboard from './components/dashboard/Dashboard'
+import EventPosts from './pages/volunteer/EventPosts'
+import EventsVolunteer from './pages/volunteer/EventsVolunteer'
+import History from './pages/volunteer/History'
+import Notification from './pages/volunteer/Notification'
+
+// Import manager pages
+import EventManagement from './pages/manager/EventManagement'
+import VolunteerApproval from './pages/manager/VolunteerApproval'
+import VolunteerList from './pages/manager/VolunteerList'
+import VolunteerCompleted from './pages/manager/VolunteerCompleted'
+
+// Import admin pages
+import EventApproval from './pages/admin/EventApproval'
+import UserManagement from './pages/admin/UserManagement'
+import VolunteerListAdmin from './pages/admin/VolunteerList'
+import ExportData from './pages/admin/ExportData'
+import BloodDonationManagement from './pages/admin/BloodDonationManagement'
+
+// Import NotFound
+import NotFound from './pages/notfound/NotFound'
+
+// Landing page component (public)
+function LandingPage() {
+  const [currentSection, setCurrentSection] = useState('home')
+
+  const scrollToSection = (sectionId) => {
+    setCurrentSection(sectionId)
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['home', 'sukien', 'blood', 'aboutus', 'contact']
+      const scrollPosition = window.scrollY + 100
+
+      for (const section of sections) {
+        const element = document.getElementById(section)
+        if (element) {
+          const { offsetTop, offsetHeight } = element
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setCurrentSection(section)
+            break
+          }
+        }
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Auth Modal */}
+      <AuthModal />
+
+      {/* Header */}
+      <Header currentSection={currentSection} setCurrentPage={scrollToSection} currentPage={currentSection} />
+
+      {/* Main Content */}
+      <main>
+        {/* Hero Section */}
+        <section id="home">
+          <Hero />
+        </section>
+
+        {/* Blood Donation Section */}
+        <section id="blood">
+          <BloodDonation />
+        </section>
+
+        {/* About Section */}
+        <About />
+
+        {/* Contact/Footer Section */}
+        <section id="contact">
+          <Footer />
+        </section>
+      </main>
+    </div>
+  )
+}
+
+// Protected route component
+function ProtectedRoute({ children }) {
+  const { user } = useAuth()
+
+  if (!user) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
+}
+
+// Role-based route component
+function RoleRoute({ children, allowedRoles }) {
+  const { user } = useAuth()
+
+  if (!user) {
+    return <Navigate to="/" replace />
+  }
+
+  // Normalize role comparison (backend might send uppercase)
+  const userRole = user.role?.toUpperCase();
+  const normalizedAllowedRoles = allowedRoles.map(role => role.toUpperCase());
+
+  if (!normalizedAllowedRoles.includes(userRole)) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return children
+}
+
+// App Router
+function AppRouter() {
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/auth/callback" element={<OAuthCallback />} />
+
+      {/* Protected Routes - Dashboard */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/eventPosts/:eventId" 
+        element={
+          <ProtectedRoute>
+            <EventPosts />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Volunteer Routes */}
+      <Route 
+        path="/events" 
+        element={
+          <ProtectedRoute>
+            <EventsVolunteer />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/history" 
+        element={
+          <ProtectedRoute>
+            <History />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/notification" 
+        element={
+          <ProtectedRoute>
+            <Notification />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Manager Routes */}
+      <Route 
+        path="/manager/events" 
+        element={
+          <RoleRoute allowedRoles={['EVENT_MANAGER']}>
+            <EventManagement />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/manager/approve" 
+        element={
+          <RoleRoute allowedRoles={['EVENT_MANAGER']}>
+            <VolunteerApproval />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/manager/volunteerList" 
+        element={
+          <RoleRoute allowedRoles={['EVENT_MANAGER']}>
+            <VolunteerList />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/manager/volunteerCompleted" 
+        element={
+          <RoleRoute allowedRoles={['EVENT_MANAGER']}>
+            <VolunteerCompleted />
+          </RoleRoute>
+        } 
+      />
+
+      {/* Admin Routes */}
+      <Route 
+        path="/admin/users" 
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <UserManagement />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/volunteers" 
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <VolunteerListAdmin />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/events" 
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <EventApproval />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/export" 
+        element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <ExportData />
+          </RoleRoute>
+        } 
+      />
+      <Route 
+        path="/admin/blood-donations" 
+        element={
+          <RoleRoute allowedRoles={['ADMIN', 'EVENT_MANAGER']}>
+            <BloodDonationManagement />
+          </RoleRoute>
+        } 
+      />
+
+      {/* Not Found */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <EventProvider>
+          <Router>
+            <AppRouter />
+          </Router>
+        </EventProvider>
+      </NotificationProvider>
+    </AuthProvider>
+  )
+}
+
+export default App

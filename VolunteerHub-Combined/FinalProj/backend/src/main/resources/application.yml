@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: VolunteerHubProject
+  datasource:
+    url: jdbc:postgresql://localhost:5432/volunteerhub
+    username: admin
+    password: admin123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: 'true'
+  data:
+    redis:
+      port: '6379'
+      host: localhost
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+security:
+  app:
+    jwtSecret: ${JWT_SECRET}
+    jwtAccessExpirationMs: '3000000'
+    jwtRefreshExpirationMs: '86400000'
+
+logging:
+  level:
+    org:
+      hibernate:
+        tool:
+          hbm2ddl: DEBUG
+        SQL: DEBUG
+        orm:
+          connections: DEBUG
+    com.volunteerhub: DEBUG
+
+redis:
+  like-event: 'like-event'
+
+app:
+  public-url: "http://localhost:8080"
+  api-url: "http://localhost:8080"
+  verify-path: "/api/auth/verify-email"
+  reset-path: "/api/auth/reset-password"
+  require-verify: "disable"

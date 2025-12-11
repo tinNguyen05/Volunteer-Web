@@ -1,0 +1,234 @@
+scalar JSON
+
+#"yyyy-MM-dd'T'HH:mm:ss"
+
+type UserProfile {
+    userId: ID!
+    username: String
+    fullName: String
+    avatarId: String
+    email: String
+    bio: String
+    status: String
+    createdAt: String
+    postCount: Int
+    commentCount: Int
+    eventCount: Int
+}
+
+type UserProfileMini {
+    userId: ID!
+    username: String
+    avatarId: String
+}
+
+type Event {
+    eventId: ID!
+    eventName: String
+    eventDescription: String
+    eventLocation: String
+    createdAt: String
+    updatedAt: String
+
+    memberCount: Int
+    postCount: Int
+    likeCount: Int
+    creatorInfo: UserProfileMini
+
+    listPosts(page: Int = 0, size: Int = 10): PostPage
+}
+
+type Post {
+    postId: ID!
+    eventId: ID!
+    content: String
+    createdAt: String
+    updatedAt: String
+
+    commentCount: Int
+
+    likeCount: Int
+
+    creatorInfo: UserProfileMini
+
+    listComment(page: Int = 0, size: Int = 10): CommentPage
+}
+
+type Comment {
+    commentId: ID!
+    postId: ID!
+    content: String
+    createdAt: String
+    updatedAt: String
+
+    likeCount: Int
+
+    creatorInfo: UserProfileMini
+}
+
+type PageInfo {
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    hasNext: Boolean!
+    hasPrevious: Boolean!
+}
+
+type EventPage {
+    content: [Event!]!
+    pageInfo: PageInfo!
+}
+
+type PostPage {
+    content: [Post!]!
+    pageInfo: PageInfo!
+}
+
+type CommentPage {
+    content: [Comment!]!
+    pageInfo: PageInfo!
+}
+
+type UserProfilePage {
+    content: [UserProfile!]!
+    pageInfo: PageInfo!
+}
+
+# Dashboard
+
+type EventSummary {
+    eventId: ID!
+    eventName: String
+    createdAt: String
+    memberCount: Int
+    postCount: Int
+    likeCount: Int
+    creatorInfo: UserProfileMini
+}
+
+
+type PostSummary {
+    postId: ID!
+    eventId: ID!
+    createdAt: String
+    commentCount: Int
+    likeCount: Int
+}
+
+input EventFilter {
+    recentlyCreated: Boolean
+    trending: Boolean
+    limit: Int
+    since: String
+}
+
+input PostFilter {
+    recent: Boolean
+    limit: Int
+    eventIds: [ID!]
+}
+
+
+type Query {
+    getUserProfile(userId: ID!): UserProfile
+    getEvent(eventId: ID!): Event
+    getPost(postId: ID!): Post
+
+    findEvents(page: Int = 0, size: Int = 10, filter: JSON = null): EventPage
+    findPosts(page: Int = 0, size: Int = 10, filter: JSON = null): PostPage
+    findUserProfiles(page: Int = 0, size: Int = 10, filter: JSON = null): UserProfilePage
+
+    # Dashboard
+    dashboardEvents(filter: EventFilter): [EventSummary!]
+    dashboardPosts(filter: PostFilter): [PostSummary!]
+}
+
+input CreateUserProfile {
+    username: String
+    fullName: String
+    bio: String
+    avatarId: String
+    email: String
+}
+
+input CreateEventInput {
+    eventName: String!
+    eventDescription: String!
+    eventLocation: String!
+    eventDate: String
+}
+
+input CreatePostInput {
+    eventId: ID!
+    content: String!
+}
+
+input CreateCommentInput {
+    postId: ID!
+    content: String!
+}
+
+input LikeInput {
+    targetType: String!
+    targetId: ID!
+}
+
+input EditEventInput {
+    eventId: ID!
+    eventName: String
+    eventDescription: String
+    eventLocation: String
+    eventDate: String
+}
+
+input EditPostInput {
+    postId: ID!
+    content: String!
+}
+
+input EditCommentInput {
+    commentId: ID!
+    content: String!
+}
+
+type MutationResult {
+    ok: Boolean!
+    id: ID
+    message: String
+    updatedAt: String
+    createdAt: String
+}
+
+type Mutation {
+    #USER
+    createUserProfile(input: CreateUserProfile!): MutationResult!
+
+    createPost(input: CreatePostInput!): MutationResult!
+    editPost(input: EditPostInput!): MutationResult!
+    deletePost(postId: ID!): MutationResult!
+
+    createComment(input: CreateCommentInput!): MutationResult!
+    editComment(input: EditCommentInput!): MutationResult!
+    deleteComment(commentId: ID!): MutationResult!
+
+    like(input: LikeInput): MutationResult!
+    unlike(input: LikeInput): MutationResult!
+
+    registerEvent(eventId: ID!): MutationResult!
+    unregisterEvent(eventId: ID!): MutationResult!
+
+    #EVENT MANAGER
+    createEvent(input: CreateEventInput!): MutationResult!
+    editEvent(input: EditEventInput!): MutationResult!
+    deleteEvent(eventId: ID!): MutationResult!
+
+    approveRegistration(registrationId: ID!) : MutationResult!
+    rejectRegistration(registrationId: ID!) : MutationResult!
+
+    #ADMIN
+    approveEvent(eventId: ID!) : MutationResult!
+
+    banUser(userId: ID!) : MutationResult!
+    unbanUser(userId: ID!) : MutationResult!
+}
