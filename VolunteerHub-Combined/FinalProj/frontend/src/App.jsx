@@ -15,6 +15,7 @@ import AuthModal from './components/AuthModal'
 import Hero from './pages/Hero'
 import BloodDonation from './pages/BloodDonation'
 import About from './pages/About'
+import Events from './pages/Events'
 import Footer from './components/Footer'
 
 // Import auth pages
@@ -23,20 +24,25 @@ import OAuthCallback from './pages/auth/OAuthCallback'
 // Import dashboard & volunteer pages
 import Dashboard from './components/dashboard/Dashboard'
 import EventPosts from './pages/volunteer/EventPosts'
+import EventPostsNew from './pages/volunteer/EventPostsNew'
+import EventPostsBankDash from './pages/volunteer/EventPostsBankDash'
 import EventsVolunteer from './pages/volunteer/EventsVolunteer'
 import History from './pages/volunteer/History'
 import Notification from './pages/volunteer/Notification'
+import EventFeed from './components/event/EventFeed'
 
 // Import manager pages
 import EventManagement from './pages/manager/EventManagement'
+import EventManagementBankDash from './pages/manager/EventManagementBankDash'
 import VolunteerApproval from './pages/manager/VolunteerApproval'
 import VolunteerList from './pages/manager/VolunteerList'
 import VolunteerCompleted from './pages/manager/VolunteerCompleted'
 
 // Import admin pages
 import EventApproval from './pages/admin/EventApproval'
-import UserManagement from './pages/admin/UserManagement'
-import VolunteerListAdmin from './pages/admin/VolunteerList'
+import AdminEventManagement from './pages/admin/EventManagementBankDash'
+import UserManagement from './pages/admin/UserManagementBankDash'
+import UserProfileManagement from './pages/admin/UserProfileManagement'
 import ExportData from './pages/admin/ExportData'
 import BloodDonationManagement from './pages/admin/BloodDonationManagement'
 
@@ -147,7 +153,18 @@ function AppRouter() {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/events" element={<Events />} />
       <Route path="/auth/callback" element={<OAuthCallback />} />
+
+      {/* Event Feed - Facebook-like Discussion */}
+      <Route 
+        path="/eventFeed/:eventId" 
+        element={
+          <ProtectedRoute>
+            <EventFeed />
+          </ProtectedRoute>
+        } 
+      />
 
       {/* Protected Routes - Dashboard */}
       <Route 
@@ -159,10 +176,34 @@ function AppRouter() {
         } 
       />
       <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <UserProfileManagement />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/eventPosts/:eventId" 
         element={
           <ProtectedRoute>
-            <EventPosts />
+            <EventFeed />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/eventPostsNew/:eventId" 
+        element={
+          <ProtectedRoute>
+            <EventPostsNew />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/eventPostsBankDash/:eventId" 
+        element={
+          <ProtectedRoute>
+            <EventPostsBankDash />
           </ProtectedRoute>
         } 
       />
@@ -173,22 +214,6 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             <EventsVolunteer />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/history" 
-        element={
-          <ProtectedRoute>
-            <History />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/notification" 
-        element={
-          <ProtectedRoute>
-            <Notification />
           </ProtectedRoute>
         } 
       />
@@ -237,18 +262,10 @@ function AppRouter() {
         } 
       />
       <Route 
-        path="/admin/volunteers" 
-        element={
-          <RoleRoute allowedRoles={['ADMIN']}>
-            <VolunteerListAdmin />
-          </RoleRoute>
-        } 
-      />
-      <Route 
         path="/admin/events" 
         element={
           <RoleRoute allowedRoles={['ADMIN']}>
-            <EventApproval />
+            <AdminEventManagement />
           </RoleRoute>
         } 
       />
@@ -280,7 +297,12 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <EventProvider>
-          <Router>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
             <AppRouter />
           </Router>
         </EventProvider>

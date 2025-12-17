@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Sidebar from "../../components/common/Sidebar";
+import { useAuth } from '../../contexts/AuthContext';
 import { exportData } from '../../services/exportService';
 import { showNotification as showToast } from '../../services/toastService';
-import '../../assets/styles/events.css';
+import { Download, Calendar, Filter, FileText, Database } from 'lucide-react';
+import '../../assets/styles/unified-dashboard.css';
 
 export default function ExportData() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [exportType, setExportType] = useState('events');
   const [format, setFormat] = useState('csv');
   const [exporting, setExporting] = useState(false);
@@ -13,6 +18,15 @@ export default function ExportData() {
     endDate: '',
     status: 'all'
   });
+
+  // Check if user has admin role
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== 'ADMIN') {
+      navigate('/');
+      return;
+    }
+  }, [user, navigate]);
 
   const handleExport = async () => {
     try {
@@ -40,7 +54,7 @@ export default function ExportData() {
         link.click();
         link.remove();
         
-        showToast(`✅ Đã xuất dữ liệu thành công: ${fileName}`, 'success');
+        showToast(`Đã xuất dữ liệu thành công: ${fileName}`, 'success');
       } else {
         showToast(response.error || 'Không thể xuất dữ liệu', 'error');
       }
@@ -57,262 +71,242 @@ export default function ExportData() {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  return (
-    <div className="EventsVolunteer-container">
-      <Sidebar />
-      <div className="events-container">
+  const exportOptions = [
+    { value: 'events', label: 'Sự kiện', icon: '📅' },
+    { value: 'users', label: 'Người dùng', icon: '👥' },
+    { value: 'registrations', label: 'Đăng ký tham gia', icon: '📝' },
+    { value: 'posts', label: 'Bài viết', icon: '📰' },
+    { value: 'comments', label: 'Bình luận', icon: '💬' },
+    { value: 'blood-donations', label: 'Hiến máu', icon: '🩸' }
+  ];
+
+  // Show loading while checking auth
+  if (!user) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar />
         <main className="main-content">
-          <div className="events-header">
-            <h2>Xuất dữ liệu hệ thống</h2>
-          </div>
-
-          <div style={{ 
-            background: 'white', 
-            borderRadius: '12px', 
-            padding: '24px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            maxWidth: '600px',
-            margin: '0 auto'
-          }}>
-            {/* Export Type Selection */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ 
-                display: 'block', 
-                fontSize: '14px', 
-                fontWeight: 600, 
-                marginBottom: '8px',
-                color: '#374151'
-              }}>
-                Loại dữ liệu
-              </label>
-              <select 
-                value={exportType} 
-                onChange={(e) => setExportType(e.target.value)}
-                style={{ 
-                  width: '100%',
-                  padding: '10px 12px', 
-                  border: '1px solid #d1d5db', 
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  background: 'white'
-                }}
-              >
-                <option value="events">📅 Sự kiện</option>
-                <option value="users">👥 Người dùng</option>
-                <option value="registrations">📝 Đăng ký tham gia</option>
-                <option value="posts">📰 Bài viết</option>
-                <option value="comments">💬 Bình luận</option>
-                <option value="notifications">🔔 Thông báo</option>
-              </select>
-            </div>
-
-            {/* Format Selection */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ 
-                display: 'block', 
-                fontSize: '14px', 
-                fontWeight: 600, 
-                marginBottom: '8px',
-                color: '#374151'
-              }}>
-                Định dạng file
-              </label>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <label style={{ 
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px',
-                  border: `2px solid ${format === 'csv' ? '#3b82f6' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  background: format === 'csv' ? '#eff6ff' : 'white'
-                }}>
-                  <input 
-                    type="radio" 
-                    name="format" 
-                    value="csv" 
-                    checked={format === 'csv'}
-                    onChange={(e) => setFormat(e.target.value)}
-                    style={{ marginRight: '8px' }}
-                  />
-                  <span style={{ fontWeight: 500 }}>📊 CSV</span>
-                </label>
-                
-                <label style={{ 
-                  flex: 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px',
-                  border: `2px solid ${format === 'json' ? '#3b82f6' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  background: format === 'json' ? '#eff6ff' : 'white'
-                }}>
-                  <input 
-                    type="radio" 
-                    name="format" 
-                    value="json" 
-                    checked={format === 'json'}
-                    onChange={(e) => setFormat(e.target.value)}
-                    style={{ marginRight: '8px' }}
-                  />
-                  <span style={{ fontWeight: 500 }}>📄 JSON</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Filters */}
-            <div style={{ 
-              background: '#f9fafb', 
-              padding: '16px', 
-              borderRadius: '8px',
-              marginBottom: '24px'
-            }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: '#374151' }}>
-                Bộ lọc (tùy chọn)
-              </h3>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                    Từ ngày
-                  </label>
-                  <input 
-                    type="date" 
-                    name="startDate"
-                    value={filters.startDate}
-                    onChange={handleFilterChange}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px', 
-                      border: '1px solid #d1d5db', 
-                      borderRadius: '6px',
-                      fontSize: '13px'
-                    }}
-                  />
-                </div>
-                
-                <div>
-                  <label style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                    Đến ngày
-                  </label>
-                  <input 
-                    type="date" 
-                    name="endDate"
-                    value={filters.endDate}
-                    onChange={handleFilterChange}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px', 
-                      border: '1px solid #d1d5db', 
-                      borderRadius: '6px',
-                      fontSize: '13px'
-                    }}
-                  />
-                </div>
-              </div>
-
-              {exportType === 'events' && (
-                <div>
-                  <label style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                    Trạng thái
-                  </label>
-                  <select 
-                    name="status"
-                    value={filters.status}
-                    onChange={handleFilterChange}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px', 
-                      border: '1px solid #d1d5db', 
-                      borderRadius: '6px',
-                      fontSize: '13px'
-                    }}
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="approved">Đã duyệt</option>
-                    <option value="pending">Chờ duyệt</option>
-                    <option value="completed">Đã hoàn thành</option>
-                  </select>
-                </div>
-              )}
-
-              {exportType === 'registrations' && (
-                <div>
-                  <label style={{ fontSize: '13px', color: '#6b7280', display: 'block', marginBottom: '4px' }}>
-                    Trạng thái
-                  </label>
-                  <select 
-                    name="status"
-                    value={filters.status}
-                    onChange={handleFilterChange}
-                    style={{ 
-                      width: '100%',
-                      padding: '8px', 
-                      border: '1px solid #d1d5db', 
-                      borderRadius: '6px',
-                      fontSize: '13px'
-                    }}
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="pending">Chờ duyệt</option>
-                    <option value="approved">Đã duyệt</option>
-                    <option value="rejected">Từ chối</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Export Button */}
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: exporting ? '#9ca3af' : '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '15px',
-                fontWeight: 600,
-                cursor: exporting ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              {exporting ? (
-                <>
-                  <span>⏳</span>
-                  <span>Đang xuất dữ liệu...</span>
-                </>
-              ) : (
-                <>
-                  <span>⬇️</span>
-                  <span>Xuất dữ liệu</span>
-                </>
-              )}
-            </button>
-
-            {/* Info Box */}
-            <div style={{ 
-              marginTop: '20px',
-              padding: '12px',
-              background: '#eff6ff',
-              borderLeft: '3px solid #3b82f6',
-              borderRadius: '6px',
-              fontSize: '13px',
-              color: '#1e40af'
-            }}>
-              <strong>ℹ️ Lưu ý:</strong> Dữ liệu được xuất sẽ tuân theo bộ lọc đã chọn. 
-              Nếu không chọn bộ lọc, tất cả dữ liệu sẽ được xuất.
-            </div>
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p className="loading-text">Đang tải...</p>
           </div>
         </main>
       </div>
+    );
+  }
+
+  return (
+    <div className="dashboard-container">
+      <Sidebar />
+      
+      <main className="main-content">
+        {/* Header */}
+        <header className="page-header">
+          <div className="page-header-title">
+            <h1 className="page-title">Xuất Dữ Liệu Hệ Thống 📊</h1>
+            <p className="page-subtitle">Tải xuống dữ liệu dưới dạng CSV hoặc JSON</p>
+          </div>
+        </header>
+
+        <div className="content-card" style={{ maxWidth: '800px', margin: '0 auto' }}>
+          {/* Export Type Selection */}
+          <div className="form-group">
+            <label className="form-label">
+              <Database className="w-4 h-4" style={{ display: 'inline', marginRight: '0.5rem' }} />
+              Loại dữ liệu
+            </label>
+            <select 
+              value={exportType} 
+              onChange={(e) => setExportType(e.target.value)}
+              className="form-select"
+            >
+              {exportOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.icon} {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Format Selection */}
+          <div className="form-group">
+            <label className="form-label">
+              <FileText className="w-4 h-4" style={{ display: 'inline', marginRight: '0.5rem' }} />
+              Định dạng file
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <label style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                padding: '1rem',
+                border: `2px solid ${format === 'csv' ? '#10b981' : '#e2e8f0'}`,
+                borderRadius: '12px',
+                cursor: 'pointer',
+                backgroundColor: format === 'csv' ? '#ecfdf5' : 'white',
+                transition: 'all 0.2s'
+              }}>
+                <input 
+                  type="radio" 
+                  name="format" 
+                  value="csv" 
+                  checked={format === 'csv'}
+                  onChange={(e) => setFormat(e.target.value)}
+                  style={{ 
+                    marginRight: '0.75rem',
+                    width: '18px',
+                    height: '18px',
+                    accentColor: '#10b981'
+                  }}
+                />
+                <span style={{ fontWeight: 500, fontSize: '0.95rem', color: '#0f172a' }}>📊 CSV</span>
+              </label>
+              
+              <label style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                padding: '1rem',
+                border: `2px solid ${format === 'json' ? '#10b981' : '#e2e8f0'}`,
+                borderRadius: '12px',
+                cursor: 'pointer',
+                backgroundColor: format === 'json' ? '#ecfdf5' : 'white',
+                transition: 'all 0.2s'
+              }}>
+                <input 
+                  type="radio" 
+                  name="format" 
+                  value="json" 
+                  checked={format === 'json'}
+                  onChange={(e) => setFormat(e.target.value)}
+                  style={{ 
+                    marginRight: '0.75rem',
+                    width: '18px',
+                    height: '18px',
+                    accentColor: '#10b981'
+                  }}
+                />
+                <span style={{ fontWeight: 500, fontSize: '0.95rem', color: '#0f172a' }}>📄 JSON</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Filters */}
+          <div style={{ 
+            backgroundColor: '#f8fafc', 
+            padding: '1.5rem', 
+            borderRadius: '12px',
+            marginTop: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 style={{ 
+              fontSize: '0.95rem', 
+              fontWeight: 600, 
+              marginBottom: '1rem', 
+              color: '#0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <Filter className="w-4 h-4" />
+              Bộ lọc (tùy chọn)
+            </h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                  <Calendar className="w-3.5 h-3.5" style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  Từ ngày
+                </label>
+                <input 
+                  type="date" 
+                  name="startDate"
+                  value={filters.startDate}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                  style={{ fontSize: '0.875rem' }}
+                />
+              </div>
+              
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                  <Calendar className="w-3.5 h-3.5" style={{ display: 'inline', marginRight: '0.5rem' }} />
+                  Đến ngày
+                </label>
+                <input 
+                  type="date" 
+                  name="endDate"
+                  value={filters.endDate}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                  style={{ fontSize: '0.875rem' }}
+                />
+              </div>
+            </div>
+
+            {(exportType === 'events' || exportType === 'registrations') && (
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                  Trạng thái
+                </label>
+                <select 
+                  name="status"
+                  value={filters.status}
+                  onChange={handleFilterChange}
+                  className="form-select"
+                  style={{ fontSize: '0.875rem' }}
+                >
+                  <option value="all">Tất cả</option>
+                  {exportType === 'events' && (
+                    <>
+                      <option value="approved">Đã duyệt</option>
+                      <option value="pending">Chờ duyệt</option>
+                      <option value="ongoing">Đang diễn ra</option>
+                      <option value="completed">Đã hoàn thành</option>
+                    </>
+                  )}
+                  {exportType === 'registrations' && (
+                    <>
+                      <option value="pending">Chờ duyệt</option>
+                      <option value="approved">Đã duyệt</option>
+                      <option value="rejected">Từ chối</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Export Button */}
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="btn-primary"
+            style={{
+              width: '100%',
+              justifyContent: 'center',
+              backgroundColor: exporting ? '#94a3b8' : '#10b981',
+              cursor: exporting ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {exporting ? (
+              <>
+                <span style={{ fontSize: '1.25rem' }}>⏳</span>
+                <span>Đang xuất dữ liệu...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-5 h-5" />
+                <span>Xuất dữ liệu</span>
+              </>
+            )}
+          </button>
+
+          {/* Info Box */}
+          <div className="alert alert-info" style={{ marginTop: '1.5rem' }}>
+            <strong>ℹ️ Lưu ý:</strong> Dữ liệu được xuất sẽ tuân theo bộ lọc đã chọn. 
+            Nếu không chọn bộ lọc, tất cả dữ liệu sẽ được xuất.
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

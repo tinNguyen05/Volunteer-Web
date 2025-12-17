@@ -7,7 +7,17 @@ function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const role = user?.role || 'volunteer';
+  
+  // Map uppercase roles from backend to lowercase for menu selection
+  const getRoleKey = (userRole) => {
+    if (!userRole) return 'volunteer';
+    const roleUpper = userRole.toUpperCase();
+    if (roleUpper === 'ADMIN') return 'admin';
+    if (roleUpper === 'EVENT_MANAGER') return 'manager';
+    return 'volunteer';
+  };
+  
+  const role = getRoleKey(user?.role);
 
   const menuGroups = {
     volunteer: [
@@ -16,13 +26,12 @@ function Sidebar() {
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: '🏠', to: '/dashboard' },
           { key: 'events', label: 'Sự kiện', icon: '📅', to: '/events' },
-          { key: 'my-events', label: 'Lịch sử tham gia', icon: '📋', to: '/history' },
         ]
       },
       {
-        title: 'KHÁC',
+        title: 'CÁ NHÂN',
         items: [
-          { key: 'notifications', label: 'Thông báo', icon: '🔔', to: '/notification' },
+          { key: 'profile', label: 'Hồ sơ của tôi', icon: '👤', to: '/profile' },
         ]
       }
     ],
@@ -31,8 +40,14 @@ function Sidebar() {
         title: 'TRANG CHÍNH',
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: '🏠', to: '/dashboard' },
-          { key: 'events', label: 'Quản lý sự kiện', icon: '🛠️', to: '/manager/events' },
+          { key: 'events-manage', label: 'Quản lý sự kiện', icon: '🛠️', to: '/manager/events' },
           { key: 'blood-donations', label: 'Quản lý hiến máu', icon: '🩸', to: '/admin/blood-donations' },
+        ]
+      },
+      {
+        title: 'CÁ NHÂN',
+        items: [
+          { key: 'profile', label: 'Hồ sơ của tôi', icon: '👤', to: '/profile' },
         ]
       }
     ],
@@ -41,16 +56,21 @@ function Sidebar() {
         title: 'TRANG CHÍNH',
         items: [
           { key: 'dashboard', label: 'Dashboard', icon: '🏠', to: '/dashboard' },
-          { key: 'events', label: 'Quản lý sự kiện', icon: '🛠️', to: '/admin/events' },
+          { key: 'events-manage', label: 'Quản lý sự kiện', icon: '🛠️', to: '/admin/events' },
         ]
       },
       {
         title: 'QUẢN TRỊ',
         items: [
-          { key: 'user-management', label: 'Quản lý Manager', icon: '👥', to: '/admin/users' },
-          { key: 'volunteer-management', label: 'Quản lý Volunteer', icon: '👤', to: '/admin/volunteers' },
+          { key: 'user-management', label: 'Quản lý Người Dùng', icon: '👥', to: '/admin/users' },
           { key: 'blood-donations', label: 'Quản lý hiến máu', icon: '🩸', to: '/admin/blood-donations' },
           { key: 'export-data', label: 'Xuất dữ liệu', icon: '📊', to: '/admin/export' },
+        ]
+      },
+      {
+        title: 'CÁ NHÂN',
+        items: [
+          { key: 'profile', label: 'Hồ sơ của tôi', icon: '👤', to: '/profile' },
         ]
       }
     ],
@@ -101,12 +121,6 @@ function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* Footer */}
-      <div className="sidebar-footer">
-        <p>© 2025 Arise Hearts</p>
-        <p className="sidebar-footer-sub">Kết nối - Cống hiến - Lan tỏa</p>
-      </div>
     </aside>
   );
 }

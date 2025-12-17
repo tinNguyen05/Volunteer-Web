@@ -181,24 +181,6 @@ body {
     text-transform: capitalize;
 }
 
-/*----------------------Footer----------------------- */
-.sidebar-footer {
-    text-align: center;
-    font-size: 0.8rem;
-    color: #94a3b8;
-    border-top: 1px solid #e2e8f0;
-    padding: 1rem;
-}
-
-.sidebar-footer p {
-    margin: 0.25rem 0;
-}
-
-.sidebar-footer-sub {
-    font-size: 0.75rem;
-    opacity: 0.8;
-    font-style: italic;
-}
 /*----------------------Dashboard-------------------------*/
 .main-content {
     margin-left: 280px;

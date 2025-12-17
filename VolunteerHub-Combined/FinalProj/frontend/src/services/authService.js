@@ -7,9 +7,9 @@ import graphqlClient from '../api/graphqlClient';
 
 // --- REST API (Authentication) ---
 
-export const signup = async (email, password) => {
+export const signup = async (email, password, role = 'USER') => {
   try {
-    const data = await axiosClient.post('/auth/signup', { email, password });
+    const data = await axiosClient.post('/auth/signup', { email, password, role });
     return data;
   } catch (error) {
     throw new Error(error.message || 'Đăng ký thất bại');
@@ -62,20 +62,20 @@ export const getUserProfile = async (userId) => {
         bio
         fullName
         avatarId
-        role
+        status
+        createdAt
         eventCount
         postCount
+        commentCount
       }
     }
   `;
 
   try {
     const data = await graphqlClient.query(query, { userId });
-    // Trả về structure thống nhất
     return { data: data.getUserProfile };
   } catch (error) {
-    console.error("Get Profile Error:", error);
-    // Nếu chưa có profile (lỗi từ backend), trả về null hoặc flag để UI biết
-    return { data: null, hasProfile: false };
+    console.error("Get user profile error:", error);
+    throw new Error(error.message || 'Không thể tải thông tin người dùng');
   }
 };

@@ -1,8 +1,16 @@
 spring:
   application:
     name: VolunteerHubProject
+  graphql:
+    graphiql:
+      enabled: true
+    schema:
+      printer:
+        enabled: true
+      inspection:
+        max-query-depth: 15
   datasource:
-    url: jdbc:postgresql://localhost:5432/volunteerhub
+    url: jdbc:postgresql://localhost:5431/volunteerhub
     username: admin
     password: admin123
   jpa:

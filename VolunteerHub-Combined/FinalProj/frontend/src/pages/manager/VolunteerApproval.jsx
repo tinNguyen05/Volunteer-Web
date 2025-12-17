@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../../assets/styles/user-list.css";
+import '../../assets/styles/unified-dashboard.css';
 import Sidebar from "../../components/common/Sidebar";
 import { getRegistrationsByEvent, updateRegistrationStatus } from '../../services/eventService';
 import { showNotification as showToast } from '../../services/toastService';

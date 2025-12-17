@@ -20,6 +20,12 @@ export const initializePushNotifications = async () => {
       return false;
     }
 
+    // 🆕 Kiểm tra nếu user đã chặn (denied) -> Dừng ngay, không xin nữa
+    if ('Notification' in window && Notification.permission === 'denied') {
+      console.warn('🚫 User blocked notifications. Skipping request to keep console clean.');
+      return false;
+    }
+
     // Request permission
     const hasPermission = await requestNotificationPermission();
     if (!hasPermission) {

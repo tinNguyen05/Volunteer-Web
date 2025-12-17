@@ -16,4 +16,22 @@ public class CommentResolver {
     public Integer likeCount(Comment comment) {
         return redisCountService.likeCount(comment.getCommentId(), "comment");
     }
+
+    @SchemaMapping(typeName = "Comment", field = "creatorInfo")
+    public com.volunteerhub.community.model.UserProfileMini creatorInfo(Comment comment) {
+        if (comment.getCreatedBy() == null) {
+            return null;
+        }
+        
+        com.volunteerhub.community.model.UserProfileMini mini = new com.volunteerhub.community.model.UserProfileMini();
+        mini.setUserId(comment.getCreatedBy().getUserId());
+        mini.setUsername(comment.getCreatedBy().getUsername());
+        mini.setAvatarId(comment.getCreatedBy().getAvatarId());
+        return mini;
+    }
+
+    @SchemaMapping(typeName = "Comment", field = "postId")
+    public Long postId(Comment comment) {
+        return comment.getPost() != null ? comment.getPost().getPostId() : null;
+    }
 }

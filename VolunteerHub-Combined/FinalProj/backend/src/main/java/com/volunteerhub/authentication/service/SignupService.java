@@ -1,9 +1,13 @@
 package com.volunteerhub.authentication.service;
 
 import com.volunteerhub.authentication.dto.request.SignUpRequest;
+import com.volunteerhub.authentication.model.Role;
 import com.volunteerhub.authentication.model.UserAuth;
 import com.volunteerhub.authentication.model.UserAuthStatus;
 import com.volunteerhub.authentication.repository.UserAuthRepository;
+import com.volunteerhub.community.model.UserProfile;
+import com.volunteerhub.community.model.db_enum.UserStatus;
+import com.volunteerhub.community.repository.UserProfileRepository;
 import com.volunteerhub.ultis.TokenUtil;
 import com.volunteerhub.authentication.ultis.exception.VerificationException;
 import jakarta.transaction.Transactional;
@@ -25,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class SignupService {
     private final UserAuthRepository userAuthRepository;
+    private final UserProfileRepository userProfileRepository;
     private final EmailService emailService;
     private final RedisTemplate<String, Object> redisTemplate;
     private final PasswordEncoder passwordEncoder;
@@ -45,28 +50,47 @@ public class SignupService {
         }
 
         UUID newUserId = UUID.randomUUID();
+        
+        // Determine role from request
+        Role role = Role.USER;
+        UserAuthStatus status = UserAuthStatus.ACTIVE;
+        
+        if ("EVENT_MANAGER".equalsIgnoreCase(request.getRole())) {
+            role = Role.EVENT_MANAGER;
+            status = UserAuthStatus.PENDING; // Manager cần admin duyệt
+        }
+
         if ("enable".equals(requireVerify)) {
             UserAuth userAuth = UserAuth.builder()
                     .userId(newUserId)
                     .email(request.getEmail())
                     .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .role(role)
+                    .status(status)
                     .build();
 
             userAuthRepository.save(userAuth);
+            
+            // 🔥 TẠO USER PROFILE TỰ ĐỘNG
+            createUserProfile(newUserId, request.getEmail());
 
             sendVerificationEmail(newUserId, request.getEmail());
+            return;
         }
-
 
         UserAuth userAuth = UserAuth.builder()
                 .userId(newUserId)
                 .emailVerified(true)
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .role(role)
+                .status(status)
                 .build();
 
         userAuthRepository.save(userAuth);
-
+        
+        // 🔥 TẠO USER PROFILE TỰ ĐỘNG
+        createUserProfile(newUserId, request.getEmail());
     }
 
     @Transactional
@@ -102,6 +126,31 @@ public class SignupService {
         }
 
         sendVerificationEmail(user.getUserId(), email);
+    }
+
+    /**
+     * Tạo UserProfile tự động khi đăng ký
+     * Fix lỗi 500: username và status NOT NULL
+     */
+    private void createUserProfile(UUID userId, String email) {
+        try {
+            // Tạo username tự động từ email hoặc timestamp
+            String username = email.split("@")[0] + "_" + System.currentTimeMillis();
+            
+            UserProfile profile = UserProfile.builder()
+                    .userId(userId)
+                    .username(username)
+                    .fullName("Người dùng mới")
+                    .email(email)
+                    .status(UserStatus.ACTIVE)
+                    .build();
+            
+            userProfileRepository.save(profile);
+            log.info("✅ Created UserProfile for userId: {}, username: {}", userId, username);
+        } catch (Exception e) {
+            log.error("❌ Failed to create UserProfile for userId: {}", userId, e);
+            throw new VerificationException("Failed to create user profile: " + e.getMessage());
+        }
     }
 
     private void sendVerificationEmail(UUID userId, String email) {

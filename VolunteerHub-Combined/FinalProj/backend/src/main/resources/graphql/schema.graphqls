@@ -2,6 +2,15 @@ scalar JSON
 
 #"yyyy-MM-dd'T'HH:mm:ss"
 
+type UserAuth {
+    userId: ID!
+    email: String!
+    role: String!
+    status: String!
+    emailVerified: Boolean!
+    createdAt: String
+}
+
 type UserProfile {
     userId: ID!
     username: String
@@ -27,6 +36,7 @@ type Event {
     eventName: String
     eventDescription: String
     eventLocation: String
+    eventState: String
     createdAt: String
     updatedAt: String
 
@@ -41,13 +51,15 @@ type Event {
 type Post {
     postId: ID!
     eventId: ID!
+    title: String
     content: String
+    imageUrl: String
     createdAt: String
     updatedAt: String
 
     commentCount: Int
-
     likeCount: Int
+    isLiked: Boolean
 
     creatorInfo: UserProfileMini
 
@@ -139,6 +151,10 @@ type Query {
     findPosts(page: Int = 0, size: Int = 10, filter: JSON = null): PostPage
     findUserProfiles(page: Int = 0, size: Int = 10, filter: JSON = null): UserProfilePage
 
+    # User Auth Management
+    getAllUserAuth: [UserAuth!]!
+    getUserAuth(userId: ID!): UserAuth
+
     # Dashboard
     dashboardEvents(filter: EventFilter): [EventSummary!]
     dashboardPosts(filter: PostFilter): [PostSummary!]
@@ -228,6 +244,11 @@ type Mutation {
 
     #ADMIN
     approveEvent(eventId: ID!) : MutationResult!
+    rejectEvent(eventId: ID!) : MutationResult!
+    approveUserAuth(userId: ID!) : MutationResult!
+    deleteUserAuth(userId: ID!) : MutationResult!
+    banUserAuth(userId: ID!) : MutationResult!
+    unbanUserAuth(userId: ID!) : MutationResult!
 
     banUser(userId: ID!) : MutationResult!
     unbanUser(userId: ID!) : MutationResult!

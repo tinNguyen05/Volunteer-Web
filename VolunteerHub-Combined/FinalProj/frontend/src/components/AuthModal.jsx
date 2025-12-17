@@ -27,22 +27,6 @@ export default function AuthModal() {
     setFormData(prev => ({ ...prev, role }));
   };
 
-  // Redirect based on role
-  const redirectByRole = (role) => {
-    switch(role) {
-      case 'ADMIN':
-        navigate('/admin/users');
-        break;
-      case 'EVENT_MANAGER':
-        navigate('/manager/events');
-        break;
-      case 'USER':
-      default:
-        navigate('/dashboard');
-        break;
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -50,8 +34,9 @@ export default function AuthModal() {
 
     try {
       if (authMode === 'login') {
-        const userData = await login(formData.email, formData.password);
-        redirectByRole(userData.role);
+        await login(formData.email, formData.password);
+        // Redirect to landing page after successful login
+        navigate('/');
       } else {
         // Validate signup
         if (formData.password !== formData.confirmPassword) {
@@ -61,9 +46,15 @@ export default function AuthModal() {
           throw new Error("Vui lòng đồng ý với điều khoản sử dụng");
         }
         
-        // Backend only accepts email & password, role auto-assigned as USER
-        await authService.signup(formData.email, formData.password);
-        alert("Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản. Vai trò mặc định: Volunteer");
+        // Send signup request with role
+        await authService.signup(formData.email, formData.password, selectedRole);
+        
+        if (selectedRole === 'EVENT_MANAGER') {
+          alert("Đăng ký thành công! Tài khoản Manager của bạn đang chờ Admin duyệt. Bạn sẽ nhận được thông báo qua email khi tài khoản được kích hoạt.");
+        } else {
+          alert("Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ với vai trò Volunteer.");
+        }
+        
         switchMode('login');
         setFormData({ email: '', password: '', confirmPassword: '', agreeTerms: false, role: 'USER' });
         setSelectedRole('USER');
@@ -187,7 +178,7 @@ export default function AuthModal() {
                   <label className="auth-label">
                     Đăng ký với vai trò 
                     <span style={{ fontSize: '0.75rem', color: '#9ca3af', marginLeft: '8px' }}>
-                      (Mặc định: Volunteer)
+                      (Chọn vai trò phù hợp)
                     </span>
                   </label>
                   <div className="auth-role-buttons" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
@@ -200,23 +191,23 @@ export default function AuthModal() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       Volunteer
+                      <span style={{ fontSize: '0.7rem', color: '#10b981' }}>✓ Kích hoạt ngay</span>
                     </button>
 
                     <button 
                       type="button" 
                       className={`auth-role-btn auth-role-manager ${selectedRole === 'EVENT_MANAGER' ? 'active' : ''}`}
                       onClick={() => handleRoleSelect('EVENT_MANAGER')}
-                      disabled
-                      style={{ opacity: 0.5, cursor: 'not-allowed' }}
                     >
                       <svg className="role-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       Manager
+                      <span style={{ fontSize: '0.7rem', color: '#f59e0b' }}>⏳ Chờ duyệt</span>
                     </button>
                   </div>
                   <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '4px' }}>
-                    💡 Tất cả tài khoản mới đều bắt đầu với vai trò Volunteer. Liên hệ admin để nâng cấp.
+                    💡 <strong>Volunteer:</strong> Kích hoạt ngay lập tức | <strong>Manager:</strong> Cần Admin duyệt (1-2 ngày)
                   </p>
                 </div>
 

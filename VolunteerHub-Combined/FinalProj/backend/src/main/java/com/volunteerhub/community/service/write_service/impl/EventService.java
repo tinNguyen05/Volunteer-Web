@@ -45,6 +45,19 @@ public class EventService implements IEventService {
     }
 
     @Override
+    public ActionResponse<Void> rejectEvent(Long eventId) {
+        int result = eventRepository.updateEventStatus(eventId, EventState.REJECTED);
+
+        if (result == 0) {
+            return ActionResponse.failure("Event rejection failed");
+        }
+
+        return ActionResponse.success(eventId.toString(),
+                null,
+                LocalDateTime.now());
+    }
+
+    @Override
     public ActionResponse<Void> createEvent(UUID userId, CreateEventInput input) {
         UserProfile creator = userProfileRepository.getReferenceById(userId);
 
@@ -54,6 +67,8 @@ public class EventService implements IEventService {
                 .eventDescription(input.getEventDescription())
                 .eventLocation(input.getEventLocation())
                 .eventState(EventState.PENDING)
+                .startTime(input.getStartTime())
+                .endAt(input.getEndAt())
                 .createdBy(creator)
                 .build();
 

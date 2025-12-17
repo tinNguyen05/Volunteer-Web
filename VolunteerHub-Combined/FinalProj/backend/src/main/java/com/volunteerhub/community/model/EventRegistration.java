@@ -1,6 +1,5 @@
 package com.volunteerhub.community.model;
 
-import com.volunteerhub.community.model.db_enum.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -37,11 +36,6 @@ public class EventRegistration {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserProfile userProfile;
-
-    @Builder.Default
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private RegistrationStatus status = RegistrationStatus.PENDING;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -6,7 +6,6 @@ import com.volunteerhub.community.model.EventRegistration;
 import com.volunteerhub.community.model.RoleInEvent;
 import com.volunteerhub.community.model.UserProfile;
 import com.volunteerhub.community.model.db_enum.ParticipationStatus;
-import com.volunteerhub.community.model.db_enum.RegistrationStatus;
 import com.volunteerhub.community.repository.EventRegistrationRepository;
 import com.volunteerhub.community.repository.EventRepository;
 import com.volunteerhub.community.repository.RoleInEventRepository;
@@ -41,11 +40,6 @@ public class EventRegistrationService implements IEventRegistrationService {
                     String.format("Registration not found (registrationId: %d)", registrationId));
         }
 
-        if (reg.getStatus() != RegistrationStatus.PENDING) {
-            return ActionResponse.failure(
-                    "Registration cannot be approved because it has already been processed");
-        }
-
         Long eventId = reg.getEventId();
         UUID userId = reg.getUserId();
 
@@ -54,9 +48,6 @@ public class EventRegistrationService implements IEventRegistrationService {
             return ActionResponse.failure(
                     String.format("User already registered for this event (eventId: %d)", eventId));
         }
-
-        reg.setStatus(RegistrationStatus.APPROVED);
-        eventRegistrationRepo.save(reg);
 
         RoleInEvent roleInEvent = RoleInEvent.builder()
                 .event(reg.getEvent())
@@ -79,11 +70,6 @@ public class EventRegistrationService implements IEventRegistrationService {
                     String.format("Registration not found (registrationId: %d)", registrationId));
         }
 
-        if (reg.getStatus() != RegistrationStatus.PENDING) {
-            return ActionResponse.failure(
-                    "Registration cannot be updated because it has already been processed");
-        }
-
         Long eventId = reg.getEventId();
         UUID userId = reg.getUserId();
 
@@ -93,8 +79,8 @@ public class EventRegistrationService implements IEventRegistrationService {
                     String.format("User already registered for this event (eventId: %d)", eventId));
         }
 
-        reg.setStatus(RegistrationStatus.REJECTED);
-        eventRegistrationRepo.save(reg);
+        // Xóa đăng ký thay vì set status
+        eventRegistrationRepo.delete(reg);
 
         return ActionResponse.success(
                 registrationId.toString(),
@@ -105,9 +91,9 @@ public class EventRegistrationService implements IEventRegistrationService {
     @Override
     public ActionResponse<Void> registerEvent(UUID userId, Long eventId) {
 
-        if (eventRegistrationRepo.existsByUserIdAndEventIdAndStatus(
-                userId, eventId, RegistrationStatus.PENDING)) {
-            return ActionResponse.failure("Registration is already pending");
+        // Kiểm tra đã đăng ký chưa (không cần status)
+        if (eventRegistrationRepo.existsByUserIdAndEventId(userId, eventId)) {
+            return ActionResponse.failure("You are already registered for this event");
         }
 
         if (!eventRepo.existsById(eventId)) {
@@ -140,16 +126,15 @@ public class EventRegistrationService implements IEventRegistrationService {
 
     @Override
     public ActionResponse<Void> unregisterEvent(UUID userId, Long eventId) {
-        EventRegistration reg = eventRegistrationRepo.findByUserIdAndEventIdAndStatus(
-                userId, eventId, RegistrationStatus.PENDING).orElse(null);
+        EventRegistration reg = eventRegistrationRepo.findByUserIdAndEventId(userId, eventId).orElse(null);
 
         if (reg == null) {
             return ActionResponse.failure(
-                    "Unable to unregister because this registration either does not exist or has already been processed");
+                    "Unable to unregister because this registration does not exist");
         }
 
-        reg.setStatus(RegistrationStatus.CANCELLED_BY_USER);
-        eventRegistrationRepo.save(reg);
+        // Xóa hẳn đăng ký khỏi database (hard delete)
+        eventRegistrationRepo.delete(reg);
 
         return ActionResponse.success(
                 reg.getRegistrationId().toString(),

@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getPostsByEvent, createPost, toggleLike, addComment, deletePost, deleteComment } from '../../services/postService';
 import { getEventById } from '../../services/eventService';
 import { showNotification as showToast } from '../../services/toastService';
-import '../../assets/styles/events.css';
+import '../../assets/styles/unified-dashboard.css';
 
 export default function EventPosts() {
   const { eventId } = useParams();
@@ -36,10 +36,10 @@ export default function EventPosts() {
         const eventData = eventResponse.data;
         setEvent({
           id: eventData.eventId,
-          title: eventData.title,
-          description: eventData.description,
-          location: eventData.location,
-          startAt: eventData.startAt,
+          title: eventData.eventName || 'Sự kiện',
+          description: eventData.eventDescription || '',
+          location: eventData.eventLocation || 'Chưa xác định',
+          startAt: eventData.createdAt,
           memberCount: eventData.memberCount
         });
 

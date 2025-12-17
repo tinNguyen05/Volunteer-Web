@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
-import "../../assets/styles/events.css";
+import '../../assets/styles/unified-dashboard.css';
 import Sidebar from "../../components/common/Sidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { useEvents } from "../../contexts/EventContext";
@@ -11,6 +11,17 @@ function EventApproval() {
     const { user } = useAuth();
     const { approvedEvents, pendingEvents, approveEvent, rejectEvent, deleteEvent } = useEvents();
     const { showNotification } = useNotification();
+
+    // Check if user has admin role
+    useEffect(() => {
+      if (!user) {
+        return; // Wait for user to load
+      }
+      if (user.role !== 'ADMIN') {
+        navigate('/');
+        return;
+      }
+    }, [user, navigate]);
 
     const handlePosts = () => {
       navigate('/eventPosts');
@@ -50,6 +61,18 @@ function EventApproval() {
       showNotification(result.message, result.success ? 'success' : 'error');
     }
   };
+
+  // Show loading while checking auth
+  if (!user) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+        <Sidebar />
+        <main style={{ flex: 1, marginLeft: '280px', padding: '32px' }}>
+          <div style={{ textAlign: 'center', paddingTop: '50px' }}>Đang tải...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="EventApproval-container">

@@ -5,6 +5,7 @@ import com.volunteerhub.authentication.dto.request.LoginRequest;
 import com.volunteerhub.authentication.dto.response.LoginResponse;
 import com.volunteerhub.authentication.dto.response.RefreshResponse;
 import com.volunteerhub.authentication.model.UserAuth;
+import com.volunteerhub.authentication.model.UserAuthStatus;
 import com.volunteerhub.authentication.repository.UserAuthRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +28,15 @@ public class LoginService {
         if (!passwordEncoder.matches(request.getPassword(), userAuth.getPasswordHash())) {
             throw new LoginException("Invalid password");
         }
+
+        // Check status
+        if (userAuth.getStatus() == UserAuthStatus.PENDING) {
+            throw new LoginException("Your account is pending approval by admin");
+        }
+        if (userAuth.getStatus() == UserAuthStatus.LOCKED || userAuth.getStatus() == UserAuthStatus.DISABLED) {
+            throw new LoginException("Your account has been locked or disabled");
+        }
+
         List<String> roles = List.of(userAuth.getRole().toString());
 
         String accessToken = jwtService.generateAccessToken(userAuth.getUserId(), roles);

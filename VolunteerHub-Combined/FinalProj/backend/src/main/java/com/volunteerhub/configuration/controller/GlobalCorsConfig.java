@@ -12,6 +12,7 @@ public class GlobalCorsConfig implements WebMvcConfigurer {
         registry.addMapping("/**") // Apply CORS policy to all endpoints
                 .allowedOrigins(
                     "http://localhost:5173",  // Vite dev server
+                    "http://localhost:5174",  // Vite dev server (alternative port)
                     "http://localhost:3000",  // React default
                     "https://localhost:3000"  // HTTPS variant
                 ) 

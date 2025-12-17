@@ -1,292 +1,614 @@
-import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Calendar, MapPin, Users, Eye, X, Search, Plus
+} from 'lucide-react';
 import Sidebar from "../../components/common/Sidebar";
 import { useAuth } from "../../contexts/AuthContext";
-import { useEvents } from "../../contexts/EventContext";
 import { useNotification } from "../../contexts/NotificationContext";
-import { completeEvent } from '../../services/eventService';
-import "../../assets/styles/events.css";
+import { getAllEvents, createEvent } from "../../services/eventService";
+import '../../assets/styles/home.css';
 
 export default function EventManagement() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { approvedEvents, pendingEvents, createEvent, updateEvent, deleteEvent } = useEvents();
   const { showNotification } = useNotification();
-
-  const handlePosts = () => {
-    navigate('/eventPosts');
-  };
-
-  const handleApprove = () => {
-    navigate('/manager/approve');
-  };
-
-  const handleViewList = () => {
-    navigate('/manager/volunteerList');
-  };
-
-  const handleViewCompleted = () => {
-    navigate('/manager/volunteerCompleted');
-  };
-
-  // Combine approved and pending events for manager view
-  // Show status: approved or pending
-  const managerEvents = [
-    ...approvedEvents
-      .filter(e => e.createdBy === user?.id || user?.role === 'ADMIN')
-      .map(e => ({ ...e, approvalStatus: 'approved' })),
-    ...pendingEvents
-      .filter(e => e.createdBy === user?.id || user?.role === 'ADMIN')
-      .map(e => ({ ...e, approvalStatus: 'pending' }))
-  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const [activeTab, setActiveTab] = useState("all");
-  const [showModal, setShowModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [form, setForm] = useState({
-    title: '', date: '', location: '', description: '', image: '', attendees: '0'
+  
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    eventName: '',
+    eventDescription: '',
+    eventLocation: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: ''
   });
 
-  // Filter by approval status
-  const filtered = activeTab === "all" 
-    ? managerEvents 
-    : managerEvents.filter((e) => e.approvalStatus === activeTab);
-
-  const handleCreate = () => {
-    setEditingEvent(null);
-    setForm({ title: '', date: '', location: '', description: '', image: '', attendees: '0' });
-    setShowModal(true);
-  };
-
-  const handleEdit = (e, ev) => {
-    e.preventDefault();
-    if (ev.approvalStatus === 'pending') {
-      showNotification('Không thể chỉnh sửa sự kiện đang chờ phê duyệt!', 'error');
-      return;
-    }
-    setEditingEvent(ev);
-    setForm({ 
-      title: ev.title, 
-      date: ev.date, 
-      location: ev.location || '', 
-      description: ev.description, 
-      image: ev.image,
-      attendees: ev.attendees || '0'
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = (e, id) => {
-    e.preventDefault();
-    if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này?")) {
-      const result = deleteEvent(id, user?.role);
-      if (result.success) {
-        showNotification(result.message, 'success');
-      } else {
-        showNotification(result.message, 'error');
-      }
-    }
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setEditingEvent(null);
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (editingEvent) {
-      const result = updateEvent(editingEvent.id, form, user?.role);
-      showNotification(result.message, result.success ? 'success' : 'error');
-    } else {
-      const result = createEvent(form, user?.role, user?.id);
-      showNotification(result.message, result.success ? 'success' : 'info');
-    }
-    closeModal();
-  };
-
-  const handleComplete = async (e, event) => {
-    e.preventDefault();
-    
-    if (!window.confirm(`Xác nhận đánh dấu sự kiện "${event.title}" đã hoàn thành?`)) {
-      return;
-    }
-
+  // Fetch events from database
+  const fetchEvents = async () => {
     try {
-      const response = await completeEvent(event.id);
-      if (response.success) {
-        showNotification('✅ Đã đánh dấu sự kiện hoàn thành và gửi thông báo cho tình nguyện viên', 'success');
-        // Optionally refresh events or update local state
-        window.location.reload(); // Simple refresh for now
+      setLoading(true);
+      setError(null);
+      const response = await getAllEvents(0, 100);
+      
+      if (response.success && response.data) {
+        const mapped = response.data.map(event => ({
+          id: event.eventId,
+          title: event.eventName || 'Sự kiện',
+          description: event.eventDescription || '',
+          location: event.eventLocation || 'Chưa xác định',
+          startAt: event.createdAt,
+          endAt: event.updatedAt,
+          status: event.eventState || event.event_state || 'PENDING',
+          memberCount: event.memberCount || 0,
+          postCount: event.postCount || 0,
+          likeCount: event.likeCount || 0,
+          creatorInfo: event.creatorInfo || {},
+          createdAt: event.createdAt || new Date().toISOString()
+        }));
+        setEvents(mapped);
       } else {
-        showNotification(response.error || 'Không thể hoàn thành sự kiện', 'error');
+        setEvents([]);
+        setError(response.error || "Không thể tải danh sách sự kiện");
       }
     } catch (error) {
-      showNotification('Lỗi khi hoàn thành sự kiện', 'error');
+      setEvents([]);
+      setError(error.message || "Đã xảy ra lỗi khi tải dữ liệu");
+      showNotification("Không thể tải danh sách sự kiện", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isEventPast = (dateString) => {
-    const eventDate = new Date(dateString);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return eventDate < today;
+  useEffect(() => {
+    if (!user) return;
+    if (user.role !== "EVENT_MANAGER") {
+      navigate("/");
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user || user.role !== "EVENT_MANAGER") return;
+    fetchEvents();
+  }, [user]);
+
+  // Filter logic
+  const filteredEvents = () => {
+    let filtered = events;
+    
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter(e => e.status === statusFilter);
+    }
+    
+    if (searchTerm.trim()) {
+      filtered = filtered.filter(e =>
+        e.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return filtered;
   };
 
-  const canCompleteEvent = (event) => {
-    return event.approvalStatus === 'approved' && 
-           isEventPast(event.date) && 
-           !event.isCompleted;
+  // Stats calculation
+  const stats = {
+    total: events.length,
+    pending: events.filter(e => e.status === 'PENDING').length,
+    accepted: events.filter(e => e.status === 'ACCEPTED' || e.status === 'UPCOMING').length,
+    rejected: events.filter(e => e.status === 'REJECTED').length
+  };
+
+  const getStatusBadgeStyle = (status) => {
+    const map = {
+      PENDING: { bg: '#fef3c7', text: '#92400e' },
+      ACCEPTED: { bg: '#d1fae5', text: '#065f46' },
+      UPCOMING: { bg: '#d1fae5', text: '#065f46' },
+      REJECTED: { bg: '#fee2e2', text: '#991b1b' }
+    };
+    return map[status] || map.PENDING;
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('vi-VN', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    } catch {
+      return 'N/A';
+    }
+  };
+
+  const handleViewPosts = (eventId) => {
+    navigate(`/eventPosts/${eventId}`);
+  };
+
+  const handleCreateEvent = async () => {
+    try {
+      if (!newEvent.eventName || !newEvent.eventDescription || !newEvent.eventLocation) {
+        showNotification('Vui l\u00f2ng đi\u1ec1n đầy đủ th\u00f4ng tin!', 'error');
+        return;
+      }
+
+      const input = {
+        eventName: newEvent.eventName,
+        eventDescription: newEvent.eventDescription,
+        eventLocation: newEvent.eventLocation,
+        eventDate: newEvent.startDate || null,
+        startTime: newEvent.startDate && newEvent.startTime 
+          ? new Date(newEvent.startDate + 'T' + newEvent.startTime).toISOString() 
+          : null,
+        endAt: newEvent.endDate && newEvent.endTime 
+          ? new Date(newEvent.endDate + 'T' + newEvent.endTime).toISOString() 
+          : null
+      };
+
+      const response = await createEvent(input);
+      
+      if (response.success) {
+        showNotification('S\u1ef1 ki\u1ec7n \u0111\u00e3 \u0111\u01b0\u1ee3c t\u1ea1o v\u00e0 \u0111ang ch\u1edd duy\u1ec7t!', 'success');
+        setShowCreateModal(false);
+        setNewEvent({
+          eventName: '',
+          eventDescription: '',
+          eventLocation: '',
+          startDate: '',
+          startTime: '',
+          endDate: '',
+          endTime: ''
+        });
+        fetchEvents();
+      } else {
+        showNotification(response.error || 'Kh\u00f4ng th\u1ec3 t\u1ea1o s\u1ef1 ki\u1ec7n', 'error');
+      }
+    } catch (error) {
+      showNotification('L\u1ed7i khi t\u1ea1o s\u1ef1 ki\u1ec7n', 'error');
+    }
   };
 
   return (
-    <div className="EventsVolunteer-container">
+    <div className="dashboard-container">
       <Sidebar />
-      <div className="events-container">
-        <main className="main-content">
-          <div className="events-header-row">
-            <div className="events-header">
-              <h2>Quản lý sự kiện</h2>
-            </div>
-            <button onClick={handleCreate} className="add-event-btn">Tạo sự kiện</button>
+      
+      <main className="main-content">
+        {/* Header */}
+        <div className="main-header">
+          <div>
+            <h1 className="dashboard-title">Quản Lý Sự Kiện 📅</h1>
+            <p className="dashboard-subtitle">Tạo và quản lý các sự kiện của bạn</p>
           </div>
+          
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="btn-home-dropdown"
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Plus className="w-5 h-5" />
+            <span>Tạo Sự Kiện Mới</span>
+          </button>
+        </div>
 
-          <div className="tabs-row">
-            <div className="events-tabs">
-              <button className={`event-tab ${activeTab === "all" ? "active" : ""}`} onClick={() => setActiveTab("all")}>Tất cả</button>
-              <button className={`event-tab ${activeTab === "approved" ? "active" : ""}`} onClick={() => setActiveTab("approved")}>Đã duyệt</button>
-              <button className={`event-tab ${activeTab === "pending" ? "active" : ""}`} onClick={() => setActiveTab("pending")}>Chờ duyệt</button>
-            </div>
-          </div>
-
-          <div id="events-area">
-            {filtered.length === 0 ? (
-              <div className="loading">Không có sự kiện.</div>
-            ) : (
-              <div className="event-list">
-                {filtered.map((event) => (
-                  <div key={event.id} className="event-card event-vol">
-                    {event.image && (
-                      <div style={{ marginBottom: '16px', borderRadius: '8px', overflow: 'hidden' }}>
-                        <img 
-                          src={event.image} 
-                          alt={event.title}
-                          style={{ 
-                            width: '100%', 
-                            height: '200px', 
-                            objectFit: 'cover',
-                            display: 'block'
-                          }}
-                        />
-                      </div>
-                    )}
-                    <div className="event-title-row">
-                      <a href="#" className="event-title" onClick={handlePosts}>{event.title}</a>
-                      <span className="event-date">{event.date}</span>
-                    </div>
-                    <div className="event-location">📍 {event.location || 'Chưa cập nhật'}</div>
-                    <div className="event-desc">{event.description}</div>
-                    <div className="event-tags">
-                      <span className={`event-status ${event.approvalStatus === 'approved' ? 'ongoing' : 'upcoming'}`}>
-                        {event.approvalStatus === 'approved' ? '✓ Đã duyệt' : '⏳ Chờ duyệt'}
-                      </span>
-                      <span style={{ fontSize: '0.85rem', color: '#666', marginLeft: '8px' }}>
-                        {event.attendees || 0} người tham gia
-                      </span>
-                    </div>
-
-                    <div className="event-actions">
-                      {event.isCompleted ? (
-                        <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 500 }}>
-                          ✓ Đã hoàn thành
-                        </span>
-                      ) : user?.role === 'ADMIN' || event.approvalStatus === 'approved' ? (
-                        <>
-                          {canCompleteEvent(event) && (
-                            <button 
-                              className="join-btn" 
-                              onClick={(e) => handleComplete(e, event)}
-                              style={{ 
-                                marginRight: '8px',
-                                background: '#10b981',
-                                fontSize: '0.85rem',
-                                padding: '6px 12px'
-                              }}
-                            >
-                              ✓ Hoàn thành
-                            </button>
-                          )}
-                          <button className="event-edit-btn" onClick={(e) => handleEdit(e, event)}>Sửa</button>
-                          <button className="event-delete-btn" onClick={(e) => handleDelete(e, event.id)}>Xóa</button>
-                        </>
-                      ) : (
-                        <span style={{ fontSize: '0.9rem', color: '#999', fontStyle: 'italic' }}>
-                          Đang chờ admin phê duyệt...
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+        {/* Statistics Section */}
+        <section className="stats-section">
+          <div className="stats-grid">
+            <div className="stat-card" style={{ '--accent-color': '#10b981' }}>
+              <div className="stat-icon">📅</div>
+              <div className="stat-content">
+                <h3 className="stat-value">{stats.total}</h3>
+                <p className="stat-label">Tổng sự kiện</p>
               </div>
-            )}
-          </div>
-        </main>
-      </div>
+            </div>
 
-      {/* MODAL */}
-      {showModal && (
-        <div
-          className="register-overlay"
-          onClick={(e) => { if (e.target.className === 'register-overlay') closeModal(); }}
-          style={{
+            <div className="stat-card" style={{ '--accent-color': '#f59e0b' }}>
+              <div className="stat-icon">⏳</div>
+              <div className="stat-content">
+                <h3 className="stat-value">{stats.pending}</h3>
+                <p className="stat-label">Chờ duyệt</p>
+              </div>
+            </div>
+
+            <div className="stat-card" style={{ '--accent-color': '#10b981' }}>
+              <div className="stat-icon">✅</div>
+              <div className="stat-content">
+                <h3 className="stat-value">{stats.accepted}</h3>
+                <p className="stat-label">Đã duyệt</p>
+              </div>
+            </div>
+
+            <div className="stat-card" style={{ '--accent-color': '#ef4444' }}>
+              <div className="stat-icon">❌</div>
+              <div className="stat-content">
+                <h3 className="stat-value">{stats.rejected}</h3>
+                <p className="stat-label">Bị từ chối</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Search and Filter */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '16px', 
+          padding: '1.5rem', 
+          marginBottom: '2rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+        }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <Search 
+                style={{ 
+                  position: 'absolute', 
+                  left: '1rem', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  color: '#94a3b8',
+                  width: '20px',
+                  height: '20px'
+                }} 
+              />
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên, mô tả, địa điểm..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  paddingLeft: '3rem',
+                  padding: '0.875rem 1.25rem',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontSize: '0.95rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '0.875rem 1.25rem',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                fontSize: '0.95rem',
+                outline: 'none',
+                cursor: 'pointer',
+                minWidth: '200px'
+              }}
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="PENDING">⏳ Chờ duyệt</option>
+              <option value="ACCEPTED">✅ Đã duyệt</option>
+              <option value="UPCOMING">🚀 Sắp tới</option>
+              <option value="REJECTED">❌ Bị từ chối</option>
+            </select>
+          </div>
+
+          {(searchTerm || statusFilter !== "ALL") && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("ALL");
+              }}
+              style={{
+                marginTop: '1rem',
+                padding: '0.5rem 1rem',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#475569',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <X className="w-4 h-4" />
+              Xóa bộ lọc
+            </button>
+          )}
+        </div>
+
+        {/* Events Grid */}
+        {loading ? (
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '16px', 
+            padding: '3rem', 
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+          }}>
+            <p style={{ color: '#64748b' }}>Đang tải dữ liệu...</p>
+          </div>
+        ) : error ? (
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '16px', 
+            padding: '3rem', 
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+          }}>
+            <p style={{ color: '#ef4444', marginBottom: '0.5rem' }}>⚠️ Đã xảy ra lỗi</p>
+            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>{error}</p>
+          </div>
+        ) : filteredEvents().length === 0 ? (
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '16px', 
+            padding: '3rem', 
+            textAlign: 'center',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
+          }}>
+            <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📅</p>
+            <h3 style={{ color: '#0f172a', marginBottom: '0.5rem' }}>Không tìm thấy sự kiện</h3>
+            <p style={{ color: '#64748b' }}>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          </div>
+        ) : (
+          <div className="events-grid">
+            {filteredEvents().map((event) => {
+              const badge = getStatusBadgeStyle(event.status);
+              
+              return (
+                <div key={event.id} className="event-card-modern">
+                  <div 
+                    className="event-badge"
+                    style={{ backgroundColor: badge.bg, color: badge.text }}
+                  >
+                    {event.status === 'PENDING' && '⏳ Chờ duyệt'}
+                    {event.status === 'ACCEPTED' && '✅ Đã duyệt'}
+                    {event.status === 'UPCOMING' && '🚀 Sắp tới'}
+                    {event.status === 'REJECTED' && '❌ Bị từ chối'}
+                  </div>
+                  
+                  <h3 className="event-title">{event.title}</h3>
+                  
+                  <p className="event-description">
+                    {event.description.substring(0, 100)}
+                    {event.description.length > 100 && '...'}
+                  </p>
+                  
+                  <div className="event-meta">
+                    <span className="meta-item">
+                      <MapPin className="w-4 h-4" />
+                      {event.location}
+                    </span>
+                    <span className="meta-item">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(event.startAt)}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                    <span className="meta-item">
+                      <Users className="w-4 h-4" />
+                      {event.memberCount} thành viên
+                    </span>
+                    <span className="meta-item">
+                      📝 {event.postCount} bài viết
+                    </span>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleViewPosts(event.id)}
+                    className="event-join-btn"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  >
+                    <Eye className="w-5 h-5" />
+                    Xem chi tiết
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Create Event Modal */}
+        {showCreateModal && (
+          <div style={{
             position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.35)',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1200,
-            padding: 20
-          }}
-        >
-          <div
-            className="register-panel"
-            style={{
-              width: '100%',
-              maxWidth: 560,
-              background: '#fff',
-              borderRadius: 12,
-              padding: 20,
-              boxShadow: '0 12px 40px rgba(23,43,77,0.2)',
-            }}
-          >
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>{editingEvent ? "Chỉnh sửa sự kiện" : "Tạo sự kiện mới"}</h3>
-              <button onClick={closeModal} aria-label="Close" style={{ border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer' }}>✕</button>
-            </header>
-
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input name="title" required placeholder="Tên sự kiện" value={form.title} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <input name="date" required type="date" value={form.date} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <input name="location" placeholder="Địa điểm" value={form.location} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <textarea name="description" placeholder="Mô tả sự kiện" rows={3} value={form.description} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <input name="image" placeholder="Link ảnh sự kiện" value={form.image} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-              <input name="attendees" type="number" min="0" placeholder="Số lượng người tham gia dự kiến" value={form.attendees} onChange={handleFormChange} style={{ padding: 10, borderRadius: 8, border: '1px solid #ddd' }} />
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
-                <button type="button" onClick={closeModal} className="share-btn" style={{ padding: '8px 12px' }}>Hủy</button>
-                <button type="submit" className="join-btn" style={{ padding: '8px 14px' }}>{editingEvent ? "Lưu thay đổi" : "Tạo mới"}</button>
+            zIndex: 1000
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '2rem',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              <h2 style={{ marginBottom: '1.5rem', color: '#0f172a' }}>Tạo Sự Kiện Mới</h2>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                  Tên sự kiện
+                </label>
+                <input
+                  type="text"
+                  value={newEvent.eventName}
+                  onChange={(e) => setNewEvent({...newEvent, eventName: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem'
+                  }}
+                  placeholder="Nhập tên sự kiện"
+                />
               </div>
-            </form>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                  Mô tả
+                </label>
+                <textarea
+                  value={newEvent.eventDescription}
+                  onChange={(e) => setNewEvent({...newEvent, eventDescription: e.target.value})}
+                  rows="4"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem',
+                    resize: 'vertical'
+                  }}
+                  placeholder="Nhập mô tả sự kiện"
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                  Địa điểm
+                </label>
+                <input
+                  type="text"
+                  value={newEvent.eventLocation}
+                  onChange={(e) => setNewEvent({...newEvent, eventLocation: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '0.95rem'
+                  }}
+                  placeholder="Nhập địa điểm"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                    Ngày bắt đầu
+                  </label>
+                  <input
+                    type="date"
+                    value={newEvent.startDate}
+                    onChange={(e) => setNewEvent({...newEvent, startDate: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                    Giờ bắt đầu
+                  </label>
+                  <input
+                    type="time"
+                    value={newEvent.startTime}
+                    onChange={(e) => setNewEvent({...newEvent, startTime: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                    Ngày kết thúc
+                  </label>
+                  <input
+                    type="date"
+                    value={newEvent.endDate}
+                    onChange={(e) => setNewEvent({...newEvent, endDate: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, color: '#475569' }}>
+                    Giờ kết thúc
+                  </label>
+                  <input
+                    type="time"
+                    value={newEvent.endTime}
+                    onChange={(e) => setNewEvent({...newEvent, endTime: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.875rem',
+                    background: '#f1f5f9',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    color: '#475569'
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleCreateEvent}
+                  style={{
+                    flex: 1,
+                    padding: '0.875rem',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Tạo Sự Kiện
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }

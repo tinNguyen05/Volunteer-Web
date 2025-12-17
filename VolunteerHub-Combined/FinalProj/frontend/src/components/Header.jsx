@@ -110,21 +110,12 @@ export default function Header({ setCurrentPage, currentPage }) {
                   <div className="menu-divider"></div>
                   <button 
                     className="menu-item"
-                    onClick={() => {
-                      // Navigate based on role
-                      if (user?.role === 'ADMIN') {
-                        navigate('/admin/users');
-                      } else if (user?.role === 'EVENT_MANAGER') {
-                        navigate('/manager/events');
-                      } else {
-                        navigate('/dashboard');
-                      }
-                    }}
+                    onClick={() => navigate('/dashboard')}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     </svg>
-                    {user?.role === 'ADMIN' ? 'Quản trị' : user?.role === 'EVENT_MANAGER' ? 'Quản lý' : 'Quản lý dự án'}
+                    Quản lý dự án
                   </button>
                   <button 
                     className="menu-item"

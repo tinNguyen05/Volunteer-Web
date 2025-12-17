@@ -12,212 +12,234 @@ export const useEvents = () => {
 }
 
 export const EventProvider = ({ children }) => {
-  // Approved events (visible to everyone) - initially empty, will fetch from backend
-  const [approvedEvents, setApprovedEvents] = useState(() => {
-    const stored = localStorage.getItem('vh_approved_events')
-    return stored ? JSON.parse(stored) : [
-      {
-        id: 1,
-        image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop",
-        date: "2025-11-20",
-        title: "Dọn rác bãi biển",
-        description: "Cùng nhau làm sạch bãi biển Mỹ Khê.",
-        attendees: "45",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      },
-      {
-        id: 2,
-        image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&fit=crop",
-        date: "2025-12-15",
-        title: "Trồng cây xanh tại trường",
-        description: "Chương trình trồng 500 cây xanh.",
-        attendees: "120",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      },
-      {
-        id: 3,
-        image: "https://images.unsplash.com/photo-1469571486292-0ba52a96ae4a?w=400&fit=crop",
-        date: "2025-11-25",
-        title: "Phát quà cho trẻ em",
-        description: "Tặng quà trung thu cho trẻ em khó khăn.",
-        attendees: "80",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      },
-      {
-        id: 4,
-        image: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&fit=crop",
-        date: "2025-11-30",
-        title: "Hiến máu nhân đạo",
-        description: "Chiến dịch hiến máu cứu người.",
-        attendees: "95",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      },
-      {
-        id: 5,
-        image: "https://images.unsplash.com/photo-1509099863731-ef4bff19e808?w=400&fit=crop",
-        date: "2025-12-05",
-        title: "Xây nhà tình thương",
-        description: "Xây dựng nhà cho người nghèo.",
-        attendees: "60",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      },
-      {
-        id: 6,
-        image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=400&fit=crop",
-        date: "2025-12-10",
-        title: "Dạy học miễn phí",
-        description: "Dạy học cho trẻ em vùng cao.",
-        attendees: "75",
-        createdBy: "admin",
-        createdAt: new Date().toISOString(),
-        approved: true,
-        approvedBy: "admin",
-        approvedAt: new Date().toISOString()
-      }
-    ]
-  })
-
-  // Pending events (waiting for admin approval)
-  const [pendingEvents, setPendingEvents] = useState(() => {
-    const stored = localStorage.getItem('vh_pending_events')
-    return stored ? JSON.parse(stored) : []
-  })
+  // Approved events (visible to everyone) - fetched from database
+  const [approvedEvents, setApprovedEvents] = useState([])
+  
+  // Pending events (waiting for admin approval) - fetched from database
+  const [pendingEvents, setPendingEvents] = useState([])
+  
+  // Loading state
+  const [loading, setLoading] = useState(true)
 
   // Fetch events from backend on mount
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await getAllEvents({ status: 'approved' })
-        if (response.success && response.data.events) {
-          const mapped = response.data.events.map(event => ({
-            id: event._id,
-            image: event.image || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop',
-            date: event.date,
-            title: event.title,
-            description: event.description,
-            attendees: (event.registeredVolunteers?.length || 0).toString(),
-            location: event.location,
-            createdBy: event.createdBy?._id || event.createdBy,
-            createdAt: event.createdAt,
-            approved: true
+        setLoading(true)
+        // Fetch all events (pagination: page 0, size 100)
+        const response = await getAllEvents(0, 100)
+        
+        if (response.success && response.data) {
+          // Map GraphQL Event model to frontend format
+          const mappedEvents = response.data.map(event => ({
+            id: event.eventId,
+            image: event.creatorInfo?.avatarId || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop',
+            date: new Date(event.createdAt).toLocaleDateString('vi-VN'),
+            title: event.eventName || 'Sự kiện',
+            description: event.eventDescription || '',
+            attendees: (event.memberCount || 0).toString(),
+            location: event.eventLocation || '',
+            createdBy: event.creatorInfo?.userId || 'unknown',
+            createdAt: event.createdAt || new Date().toISOString(),
+            startAt: event.createdAt,
+            endAt: event.updatedAt,
+            eventStatus: 'APPROVED',
+            memberLimit: 999,
+            postCount: event.postCount || 0,
+            likeCount: event.likeCount || 0
           }))
-          setApprovedEvents(mapped)
-          localStorage.setItem('vh_approved_events', JSON.stringify(mapped))
+
+          // Separate approved and pending based on eventStatus
+          const approved = mappedEvents.filter(e => 
+            e.eventStatus === 'APPROVED' || 
+            e.eventStatus === 'ONGOING' || 
+            e.eventStatus === 'COMPLETED'
+          )
+          const pending = mappedEvents.filter(e => e.eventStatus === 'PENDING')
+
+          setApprovedEvents(approved)
+          setPendingEvents(pending)
         }
       } catch (error) {
-        console.error('Error fetching events:', error)
+        console.error('Error fetching events from database:', error)
+        // On error, set empty arrays (no fallback to localStorage)
+        setApprovedEvents([])
+        setPendingEvents([])
+      } finally {
+        setLoading(false)
       }
     }
     fetchEvents()
   }, [])
 
-  // Sync to localStorage
-  useEffect(() => {
-    localStorage.setItem('vh_approved_events', JSON.stringify(approvedEvents))
-  }, [approvedEvents])
+  // Refresh events from database (called after mutations)
+  const refreshEvents = async () => {
+    try {
+      const response = await getAllEvents(0, 100)
+      if (response.success && response.data) {
+        const mappedEvents = response.data.map(event => ({
+          id: event.eventId,
+          image: event.creatorInfo?.avatarId || 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&fit=crop',
+          date: new Date(event.createdAt).toLocaleDateString('vi-VN'),
+          title: event.eventName || 'Sự kiện',
+          description: event.eventDescription || '',
+          attendees: (event.memberCount || 0).toString(),
+          location: event.eventLocation || '',
+          createdBy: event.creatorInfo?.userId || 'unknown',
+          createdAt: event.createdAt || new Date().toISOString(),
+          startAt: event.createdAt,
+          endAt: event.updatedAt,
+          eventStatus: 'APPROVED',
+          memberLimit: 999,
+          postCount: event.postCount || 0,
+          likeCount: event.likeCount || 0
+        }))
 
-  useEffect(() => {
-    localStorage.setItem('vh_pending_events', JSON.stringify(pendingEvents))
-  }, [pendingEvents])
+        const approved = mappedEvents.filter(e => 
+          e.eventStatus === 'APPROVED' || 
+          e.eventStatus === 'ONGOING' || 
+          e.eventStatus === 'COMPLETED'
+        )
+        const pending = mappedEvents.filter(e => e.eventStatus === 'PENDING')
 
-  // Create event
-  const createEvent = (eventData, creatorRole, creatorId) => {
-    const newEvent = {
-      id: Date.now(),
-      ...eventData,
-      createdBy: creatorId,
-      createdAt: new Date().toISOString(),
-      approved: creatorRole === 'admin', // Admin events are auto-approved
-      approvedBy: creatorRole === 'admin' ? creatorId : null,
-      approvedAt: creatorRole === 'admin' ? new Date().toISOString() : null
+        setApprovedEvents(approved)
+        setPendingEvents(pending)
+      }
+    } catch (error) {
+      console.error('Error refreshing events:', error)
     }
+  }
 
-    if (creatorRole === 'admin') {
-      // Admin creates approved events directly
-      setApprovedEvents(prev => [...prev, newEvent])
-      return { success: true, message: 'Sự kiện đã được tạo thành công!' }
-    } else if (creatorRole === 'manager') {
-      // Manager creates pending events
-      setPendingEvents(prev => [...prev, newEvent])
-      return { success: true, message: 'Sự kiện đã được gửi. Vui lòng đợi admin phê duyệt.' }
-    } else {
-      return { success: false, message: 'Bạn không có quyền tạo sự kiện!' }
+  // Create event - Call backend GraphQL API
+  const createEvent = async (eventData, creatorRole, creatorId) => {
+    try {
+      // Import createEvent từ eventService
+      const { createEvent: createEventAPI } = await import('../services/eventService')
+      
+      // Map frontend data to GraphQL CreateEventInput
+      const input = {
+        eventName: eventData.title,
+        eventDescription: eventData.description,
+        eventLocation: eventData.location || 'Unknown',
+        eventDate: eventData.date || new Date().toISOString()
+      }
+
+      const result = await createEventAPI(input)
+      
+      if (result.success) {
+        // Refresh events from database
+        await refreshEvents()
+        
+        // Manager events go to PENDING, Admin events may be auto-approved
+        const message = creatorRole === 'manager' 
+          ? 'Sự kiện đã được gửi. Vui lòng đợi admin phê duyệt.'
+          : 'Sự kiện đã được tạo thành công!'
+        
+        return { success: true, message }
+      } else {
+        return { success: false, message: result.error || 'Không thể tạo sự kiện' }
+      }
+    } catch (error) {
+      console.error('Error creating event:', error)
+      return { success: false, message: error.message || 'Lỗi khi tạo sự kiện' }
     }
   }
 
-  // Approve event (admin only)
-  const approveEvent = (eventId, adminId) => {
-    const event = pendingEvents.find(e => e.id === eventId)
-    if (!event) return { success: false, message: 'Không tìm thấy sự kiện!' }
-
-    const approvedEvent = {
-      ...event,
-      approved: true,
-      approvedBy: adminId,
-      approvedAt: new Date().toISOString()
+  // Approve event (admin only) - Call backend GraphQL API
+  const approveEvent = async (eventId, adminId) => {
+    try {
+      // Use eventService which has proper GraphQL mutation
+      const mutation = 'mutation ApproveEvent($eventId: ID!) { approveEvent(eventId: $eventId) { ok message } }'
+      
+      const { default: graphqlClient } = await import('../api/graphqlClient')
+      const data = await graphqlClient.mutation(mutation, { eventId })
+      
+      if (data.approveEvent.ok) {
+        // Refresh events from database
+        await refreshEvents()
+        return { success: true, message: 'Đã phê duyệt sự kiện thành công!' }
+      } else {
+        return { success: false, message: data.approveEvent.message || 'Không thể phê duyệt' }
+      }
+    } catch (error) {
+      console.error('Error approving event:', error)
+      return { success: false, message: error.message || 'Lỗi khi phê duyệt sự kiện' }
     }
-
-    setApprovedEvents(prev => [...prev, approvedEvent])
-    setPendingEvents(prev => prev.filter(e => e.id !== eventId))
-
-    return { success: true, message: 'Đã phê duyệt sự kiện thành công!' }
   }
 
-  // Reject event (admin only)
-  const rejectEvent = (eventId, reason = '') => {
-    setPendingEvents(prev => prev.filter(e => e.id !== eventId))
-    return { success: true, message: 'Đã từ chối sự kiện!' }
+  // Reject event (admin only) - Call backend GraphQL API
+  const rejectEvent = async (eventId, reason = '') => {
+    try {
+      const { deleteEvent: deleteEventAPI } = await import('../services/eventService')
+      const result = await deleteEventAPI(eventId)
+      
+      if (result.success) {
+        await refreshEvents()
+        return { success: true, message: 'Đã từ chối sự kiện!' }
+      } else {
+        return { success: false, message: result.error || 'Không thể từ chối' }
+      }
+    } catch (error) {
+      console.error('Error rejecting event:', error)
+      return { success: false, message: error.message || 'Lỗi khi từ chối sự kiện' }
+    }
   }
 
-  // Delete event (admin only)
-  const deleteEvent = (eventId) => {
-    // Admin can delete any event (both approved and pending)
-    setApprovedEvents(prev => prev.filter(e => e.id !== eventId))
-    setPendingEvents(prev => prev.filter(e => e.id !== eventId))
-    return { success: true, message: 'Đã xóa sự kiện!' }
+  // Delete event (admin only) - Call backend GraphQL API
+  const deleteEvent = async (eventId) => {
+    try {
+      const { deleteEvent: deleteEventAPI } = await import('../services/eventService')
+      const result = await deleteEventAPI(eventId)
+      
+      if (result.success) {
+        await refreshEvents()
+        return { success: true, message: 'Đã xóa sự kiện!' }
+      } else {
+        return { success: false, message: result.error || 'Không thể xóa' }
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      return { success: false, message: error.message || 'Lỗi khi xóa sự kiện' }
+    }
   }
 
-  // Update event (admin only)
-  const updateEvent = (eventId, updatedData) => {
-    // Admin can update approved events
-    setApprovedEvents(prev => 
-      prev.map(e => e.id === eventId ? { ...e, ...updatedData } : e)
-    )
-    // Also check pending events
-    setPendingEvents(prev => 
-      prev.map(e => e.id === eventId ? { ...e, ...updatedData } : e)
-    )
-    return { success: true, message: 'Đã cập nhật sự kiện!' }
+  // Update event (admin/manager) - Call backend GraphQL API
+  const updateEvent = async (eventId, updatedData) => {
+    try {
+      const { updateEvent: updateEventAPI } = await import('../services/eventService')
+      
+      // Map frontend data to GraphQL EditEventInput
+      const input = {
+        eventName: updatedData.title,
+        eventDescription: updatedData.description,
+        eventLocation: updatedData.location,
+        eventDate: updatedData.date
+      }
+
+      const result = await updateEventAPI(eventId, input)
+      
+      if (result.success) {
+        await refreshEvents()
+        return { success: true, message: 'Đã cập nhật sự kiện!' }
+      } else {
+        return { success: false, message: result.error || 'Không thể cập nhật' }
+      }
+    } catch (error) {
+      console.error('Error updating event:', error)
+      return { success: false, message: error.message || 'Lỗi khi cập nhật sự kiện' }
+    }
   }
 
   const value = {
     approvedEvents,
     pendingEvents,
+    loading,
     createEvent,
     approveEvent,
     rejectEvent,
     deleteEvent,
-    updateEvent
+    updateEvent,
+    refreshEvents
   }
 
   return (

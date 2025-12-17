@@ -21,12 +21,11 @@ export const createPost = async ({ title, body, image, eventId }) => {
     const data = await graphqlClient.mutation(mutation, {
       input: { 
         eventId, 
-        content: body,
-        title: title || 'Untitled' 
+        content: body
       }
     });
     
-    return { success: data.createPost.ok, message: data.createPost.message };
+    return { success: data.createPost.ok, message: data.createPost.message, data: data.createPost };
   } catch (error) {
     console.error('Create post error:', error);
     return { success: false, error: error.message || 'Không thể tạo bài viết' };
@@ -156,6 +155,9 @@ export const toggleLike = async (postId) => {
   }
 };
 
+// 🔥 Alias for EventFeed component
+export const likePost = toggleLike;
+
 // Unlike a post
 export const unlikePost = async (postId) => {
   try {
@@ -182,6 +184,11 @@ export const unlikePost = async (postId) => {
 // Add a comment
 export const addComment = async (postId, text) => {
   try {
+    // Ensure postId is clean Long ID (remove any mock prefix)
+    const cleanPostId = typeof postId === 'string' 
+      ? postId.replace(/^(mock-post-|post_\d+_)/, '')
+      : postId;
+    
     const mutation = `
       mutation CreateComment($input: CreateCommentInput!) {
         createComment(input: $input) {
@@ -194,14 +201,19 @@ export const addComment = async (postId, text) => {
     `;
     
     const data = await graphqlClient.mutation(mutation, {
-      input: { postId, content: text }
+      input: { postId: cleanPostId, content: text }
     });
     
-    return { success: data.createComment.ok, message: data.createComment.message };
+    return { success: data.createComment.ok, message: data.createComment.message, data: data.createComment };
   } catch (error) {
     console.error('Add comment error:', error);
     return { success: false, error: error.message };
   }
+};
+
+// 🔥 Alias for EventFeed component
+export const createComment = async ({ postId, content }) => {
+  return addComment(postId, content);
 };
 
 // Edit a comment

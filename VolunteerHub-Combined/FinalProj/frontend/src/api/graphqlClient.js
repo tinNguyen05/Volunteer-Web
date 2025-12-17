@@ -1,10 +1,10 @@
 /**
  * GraphQL Client for VolunteerHub Backend
- * Base URL: http://localhost:8080/graphql
+ * Base URL: /graphql (proxied by Vite)
  */
 
-const GRAPHQL_ENDPOINT = 'http://localhost:8080/graphql';
-const REST_API_BASE = 'http://localhost:8080/api';
+const GRAPHQL_ENDPOINT = '/graphql';
+const REST_API_BASE = '/api';
 
 class GraphQLClient {
   constructor() {

@@ -28,6 +28,13 @@ public class EventMutation {
     }
 
     @MutationMapping
+    @PreAuthorize(RolePermission.ADMIN)
+    public ActionResponse<Void> rejectEvent(@AuthenticationPrincipal UUID userId,
+                                            @Argument Long eventId) {
+        return eventService.rejectEvent(eventId);
+    }
+
+    @MutationMapping
     @PreAuthorize(RolePermission.EVENT_MANAGER)
     public ActionResponse<Void> createEvent(@AuthenticationPrincipal UUID userId,
                                             @Valid @Argument CreateEventInput input) {

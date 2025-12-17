@@ -59,21 +59,21 @@ function Dashboard() {
         // Map upcoming events (take first 3)
         const upcoming = events.slice(0, 3).map(event => ({
           id: event.eventId,
-          title: event.title,
-          description: event.description?.substring(0, 60) + '...' || 'Không có mô tả',
+          title: event.eventName || 'Sự kiện',
+          description: event.eventDescription?.substring(0, 60) + '...' || 'Không có mô tả',
           attendees: event.memberCount || 0,
-          date: new Date(event.startAt).toLocaleDateString('vi-VN'),
+          date: new Date(event.createdAt).toLocaleDateString('vi-VN'),
           badge: 'Mới',
-          location: event.location || 'Chưa xác định'
+          location: event.eventLocation || 'Chưa xác định'
         }));
         setUpcomingEvents(upcoming);
         
         // Generate recent activities from events
         const activities = events.slice(0, 5).map((event, idx) => ({
           id: idx + 1,
-          activity: `Sự kiện "${event.title}" được tạo`,
+          activity: `Sự kiện "${event.eventName || 'Sự kiện'}" được tạo`,
           user: event.creatorInfo?.username || 'Anonymous',
-          date: new Date(event.startAt).toLocaleDateString('vi-VN'),
+          date: new Date(event.createdAt).toLocaleDateString('vi-VN'),
           status: 'success'
         }));
         setRecentActivities(activities);

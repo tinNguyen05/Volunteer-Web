@@ -18,4 +18,6 @@ public class SignUpRequest {
     @Pattern(regexp = "^\\S{8,}$",
             message = "Password must be at least 8 characters and contain no spaces")
     private String password;
+
+    private String role; // "USER", "EVENT_MANAGER"
 }

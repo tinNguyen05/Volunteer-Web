@@ -2,7 +2,9 @@ package com.volunteerhub.authentication.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.util.UUID;
 
 
@@ -42,4 +44,5 @@ public class UserAuth {
     @Builder.Default
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
+
 }

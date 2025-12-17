@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public interface IEventService {
     ActionResponse<Void> approveEvent(Long eventId);
+    ActionResponse<Void> rejectEvent(Long eventId);
     ActionResponse<Void> createEvent(UUID userId, CreateEventInput input);
     ActionResponse<Void> editEvent(UUID userId, EditEventInput input);
     ActionResponse<Void> deleteEvent(UUID userId, Long eventId);

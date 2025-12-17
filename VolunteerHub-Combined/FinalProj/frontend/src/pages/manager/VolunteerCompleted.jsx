@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../../assets/styles/user-list.css";
+import '../../assets/styles/unified-dashboard.css';
 import Sidebar from "../../components/common/Sidebar";
 
 const VolunteerList = () => {

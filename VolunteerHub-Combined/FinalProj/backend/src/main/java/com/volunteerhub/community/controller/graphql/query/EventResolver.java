@@ -85,4 +85,17 @@ public class EventResolver {
     public Integer likeCount(Event event) {
         return redisCountService.likeCount(event.getEventId(), "event");
     }
+
+    @SchemaMapping(typeName = "Event", field = "creatorInfo")
+    public com.volunteerhub.community.model.UserProfileMini creatorInfo(Event event) {
+        if (event.getCreatedBy() == null) {
+            return null;
+        }
+        
+        com.volunteerhub.community.model.UserProfileMini mini = new com.volunteerhub.community.model.UserProfileMini();
+        mini.setUserId(event.getCreatedBy().getUserId());
+        mini.setUsername(event.getCreatedBy().getUsername());
+        mini.setAvatarId(event.getCreatedBy().getAvatarId());
+        return mini;
+    }
 }

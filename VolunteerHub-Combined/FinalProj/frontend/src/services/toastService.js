@@ -82,17 +82,34 @@ export const toastMessages = {
  * @param {string} type - Type: success, error, warning, info
  */
 export const showNotification = (message, type = 'info') => {
+  // 🆕 Xử lý nếu message là Object lỗi hoặc undefined/null
+  let displayMessage = message;
+  
+  if (typeof message === 'object' && message !== null) {
+    displayMessage = 
+      message.message || 
+      message.error || 
+      message.response?.data?.message || 
+      message.response?.data?.error ||
+      "Đã có lỗi xảy ra (Unknown Error)";
+  }
+  
+  // Xử lý nếu message bị undefined/null
+  if (!displayMessage || displayMessage === '') {
+    displayMessage = "Thao tác thất bại";
+  }
+
   // Check if NotificationContext exists
   if (window.showToast) {
-    window.showToast(message, type);
+    window.showToast(displayMessage, type);
   } else {
     // Fallback to browser alert
-    console.log(`[${type.toUpperCase()}] ${message}`);
+    console.log(`[${type.toUpperCase()}] ${displayMessage}`);
     
     // Use browser notification if available
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(type === 'error' ? '❌ Lỗi' : type === 'success' ? '✅ Thành công' : 'ℹ️ Thông báo', {
-        body: message,
+        body: displayMessage,
         icon: '/logo.png',
         tag: 'toast-notification'
       });
@@ -113,7 +130,7 @@ export const showNotification = (message, type = 'info') => {
         max-width: 400px;
         animation: slideIn 0.3s ease-out;
       `;
-      toast.textContent = message;
+      toast.textContent = displayMessage;
       document.body.appendChild(toast);
       
       setTimeout(() => {

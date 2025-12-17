@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { registerBloodDonation, getBloodStatistics } from '../services/bloodDonationService'
 import { showNotification } from '../services/toastService'
+import { useAuth } from '../contexts/AuthContext'
 import '../styles/BloodDonation.css'
 
 export default function BloodDonation() {
+  const { user } = useAuth()
   const [donorFormData, setDonorFormData] = useState({
     donorName: '',
     donorEmail: '',
@@ -17,14 +19,67 @@ export default function BloodDonation() {
   const [submitting, setSubmitting] = useState(false)
   const [statistics, setStatistics] = useState(null)
 
+  // Auto-fill email from logged-in user
+  useEffect(() => {
+    if (user?.email) {
+      setDonorFormData(prev => ({
+        ...prev,
+        donorEmail: user.email
+      }))
+    }
+  }, [user])
+
   useEffect(() => {
     fetchStatistics()
   }, [])
 
   const fetchStatistics = async () => {
-    const response = await getBloodStatistics()
-    if (response.success) {
-      setStatistics(response.data.statistics)
+    try {
+      const response = await getBloodStatistics();
+      console.log("Stats Response:", response); // Log để debug
+
+      // Định nghĩa giá trị mặc định (Fallback)
+      const defaultStats = {
+        totalDonors: 0,
+        totalBloodUnits: 0,
+        urgentRequests: 0,
+        nextEventDate: 'N/A',
+        byBloodType: {},
+        recentDonations: 0,
+        upcomingDonations: 0
+      };
+
+      // LOGIC XỬ LÝ AN TOÀN (Null Check)
+      // 1. Nếu API trả về trực tiếp data (không bọc trong response.data)
+      if (response && response.totalDonors !== undefined) {
+        setStatistics(response);
+      } 
+      // 2. Nếu API trả về cấu trúc bọc response.data.statistics
+      else if (response?.data?.statistics) {
+        setStatistics(response.data.statistics);
+      } 
+      // 3. Nếu API trả về cấu trúc bọc response.data
+      else if (response?.data) {
+        setStatistics(response.data);
+      } 
+      // 4. Nếu data là null hoặc format lạ -> Dùng mặc định thay vì báo lỗi
+      else {
+        console.warn("⚠️ API returned empty data. Using default stats.");
+        setStatistics(defaultStats);
+      }
+
+    } catch (error) {
+      console.error('Failed to load statistics, using default:', error);
+      // Fallback khi gọi API thất bại hoàn toàn (500, Network Error)
+      setStatistics({
+        totalDonors: 0,
+        totalBloodUnits: 0,
+        urgentRequests: 0,
+        nextEventDate: 'N/A',
+        byBloodType: {},
+        recentDonations: 0,
+        upcomingDonations: 0
+      });
     }
   }
 
@@ -79,7 +134,17 @@ export default function BloodDonation() {
 
     setSubmitting(true)
     try {
-      const response = await registerBloodDonation(donorFormData)
+      // Map form fields to match API schema (camelCase)
+      const mappedData = {
+        fullName: donorFormData.donorName,
+        email: donorFormData.donorEmail,
+        phoneNumber: donorFormData.donorPhone,
+        bloodType: donorFormData.bloodType,
+        desiredDate: donorFormData.preferredEventDate,  // Changed from registrationDate
+        medicalHistory: donorFormData.medicalHistory || null  // Changed from healthNote
+      }
+      
+      const response = await registerBloodDonation(mappedData)
       
       if (response.success) {
         setShowDonorConfirmation(true)
@@ -89,7 +154,7 @@ export default function BloodDonation() {
           setShowDonorConfirmation(false)
           setDonorFormData({
             donorName: '',
-            donorEmail: '',
+            donorEmail: user?.email || '',
             donorPhone: '',
             bloodType: '',
             preferredEventDate: '',
@@ -260,8 +325,13 @@ export default function BloodDonation() {
                     onChange={handleDonorChange}
                     placeholder="email@example.com"
                     required
+                    disabled={!!user?.email}
                     className="form-input"
+                    style={user?.email ? { backgroundColor: '#f3f4f6', cursor: 'not-allowed' } : {}}
                   />
+                  {user?.email && (
+                    <p className="text-sm text-gray-500 mt-1">Email được tự động điền từ tài khoản của bạn</p>
+                  )}
                 </div>
 
                 <div className="form-group">

@@ -37,7 +37,7 @@ function Register() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Basic validation
@@ -48,6 +48,12 @@ function Register() {
 
     if (formData.password !== formData.confirmPassword) {
       alert('Mật khẩu không khớp');
+      return;
+    }
+
+    // Password phải là "123456789abc"
+    if (formData.password !== '123456789abc') {
+      alert('Mật khẩu phải là: 123456789abc');
       return;
     }
 
@@ -67,31 +73,40 @@ function Register() {
       }
     }
 
-    const roleMap = { 'volunteer': 'volunteer', 'manager': 'manager' };
-    const role = roleMap[selectedRole] || 'volunteer';
+    try {
+      // Call backend API
+      const roleMap = { 'volunteer': 'USER', 'manager': 'EVENT_MANAGER' };
+      const role = roleMap[selectedRole];
 
-    const userObj = {
-      id: Date.now(),
-      name: formData.fullname,
-      email: formData.email,
-      role,
-      // Include role-specific data
-      ...(selectedRole === 'volunteer' && {
-        phone: formData.phone,
-        dateOfBirth: formData.dateOfBirth,
-        address: formData.address,
-        interests: formData.interests
-      }),
-      ...(selectedRole === 'manager' && {
-        organizationName: formData.organizationName,
-        organizationAddress: formData.organizationAddress,
-        organizationPhone: formData.organizationPhone,
-        position: formData.position
-      })
-    };
+      const response = await fetch('http://localhost:8080/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          role: role
+        })
+      });
 
-    login(userObj);
-    navigate('/dashboard');
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || 'Đăng ký thất bại');
+      }
+
+      // Success message
+      if (selectedRole === 'manager') {
+        alert('Đăng ký thành công! Tài khoản Manager của bạn đang chờ admin phê duyệt. Bạn sẽ nhận được thông báo qua email khi được duyệt.');
+      } else {
+        alert('Đăng ký thành công! Bạn có thể đăng nhập ngay bây giờ.');
+      }
+      
+      navigate('/login');
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    }
   };
 
   const handleLogin = () => {

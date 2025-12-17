@@ -22,8 +22,14 @@ public class Post {
     @Column(name = "post_id")
     private Long postId;
 
+    @Column(name = "title")
+    private String title;
+
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @Column(name = "event_id", insertable = false, updatable = false)
     private Long eventId;

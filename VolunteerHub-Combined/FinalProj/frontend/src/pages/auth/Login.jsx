@@ -30,14 +30,8 @@ function Login() {
 
     login(userObj);
     
-    // Redirect based on role
-    if (role === 'ADMIN') {
-      navigate('/admin/users');
-    } else if (role === 'EVENT_MANAGER') {
-      navigate('/manager/events');
-    } else {
-      navigate('/dashboard');
-    }
+    // Redirect to landing page after login
+    navigate('/');
   };
 
   const handleRegister = () => {

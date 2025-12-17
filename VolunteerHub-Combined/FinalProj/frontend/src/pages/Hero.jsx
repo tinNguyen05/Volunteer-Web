@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, MapPin, Users } from 'lucide-react'
 import '../styles/Hero.css'
 import ServiceCard from '../components/ui/ServiceCard'
 import EventCard from '../components/ui/EventCard'
 import { useEvents } from '../contexts/EventContext'
 import { useAuth } from '../contexts/AuthContext'
+import { getAllEvents } from '../services/eventService'
+import { useNavigate } from 'react-router-dom'
 
 export default function Hero() {
   const { approvedEvents } = useEvents()
   const { user, openAuth } = useAuth()
+  const navigate = useNavigate()
   const [highlightedWord, setHighlightedWord] = useState('Together')
   const [currentEventIndex, setCurrentEventIndex] = useState(0)
   const [eventsPerPage, setEventsPerPage] = useState(3)
+  const [dbEvents, setDbEvents] = useState([])
+  const [loadingEvents, setLoadingEvents] = useState(true)
 
   const handleJoinNow = () => {
     // Nếu chưa đăng nhập, mở modal đăng nhập
@@ -40,6 +45,41 @@ export default function Hero() {
     }
   }
 
+  // Fetch events from database
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoadingEvents(true)
+        const response = await getAllEvents(0, 50) // Get more events
+        if (response.success && response.data) {
+          // Filter only ACCEPTED events and map to card format
+          const mappedEvents = response.data
+            .filter(event => event.eventState === 'ACCEPTED') // Only ACCEPTED events
+            .map(event => ({
+              id: event.eventId,
+              eventId: event.eventId,
+              title: event.eventName || 'Sự kiện',
+              description: event.eventDescription || '',
+              location: event.eventLocation || '',
+              date: new Date(event.createdAt).toLocaleDateString('vi-VN'),
+              memberCount: event.memberCount || 0,
+              postCount: event.postCount || 0,
+              likeCount: event.likeCount || 0,
+              status: 'ACCEPTED',
+              creatorInfo: event.creatorInfo
+            }))
+          setDbEvents(mappedEvents)
+        }
+      } catch (error) {
+        console.error('Error fetching events:', error)
+      } finally {
+        setLoadingEvents(false)
+      }
+    }
+
+    fetchEvents()
+  }, [])
+
   // Filter out expired events (events before today) from approved events
   const activeEvents = approvedEvents.filter(event => {
     const eventDate = new Date(event.date)
@@ -47,6 +87,9 @@ export default function Hero() {
     today.setHours(0, 0, 0, 0) // Reset time to start of day
     return eventDate >= today
   })
+
+  // Use database events for display
+  const displayEvents = dbEvents.length > 0 ? dbEvents : activeEvents
 
   // Calculate responsive events per page
   useEffect(() => {
@@ -70,7 +113,7 @@ export default function Hero() {
     setCurrentEventIndex(prev => {
       if (prev === 0) {
         // If at the beginning, go to the last possible position
-        return Math.max(0, activeEvents.length - eventsPerPage)
+        return Math.max(0, displayEvents.length - eventsPerPage)
       }
       return prev - 1
     })
@@ -78,7 +121,7 @@ export default function Hero() {
 
   const handleNext = () => {
     setCurrentEventIndex(prev => {
-      const maxIndex = Math.max(0, activeEvents.length - eventsPerPage)
+      const maxIndex = Math.max(0, displayEvents.length - eventsPerPage)
       if (prev >= maxIndex) {
         // If at the end, go back to the beginning
         return 0
@@ -88,10 +131,10 @@ export default function Hero() {
   }
 
   // Get visible events
-  const visibleEvents = activeEvents.slice(currentEventIndex, currentEventIndex + eventsPerPage)
+  const visibleEvents = displayEvents.slice(currentEventIndex, currentEventIndex + eventsPerPage)
 
   // Show navigation arrows only if there are more events than can be displayed
-  const showNavigation = activeEvents.length > eventsPerPage
+  const showNavigation = displayEvents.length > eventsPerPage
 
 
 
@@ -190,62 +233,117 @@ export default function Hero() {
         <div className="events-container">
           <h2 className="section-title">Sự Kiện Sắp Tới</h2>
           <p className="section-description">
-            Hãy xem những sự kiện tình nguyện sắp tới
+            Hãy xem những sự kiện tình nguyện từ database
           </p>
 
-          <div className="events-carousel-wrapper">
-            {showNavigation && (
-              <button 
-                className="carousel-arrow carousel-arrow-left" 
-                onClick={handlePrevious}
-                aria-label="Sự kiện trước"
-              >
-                <ChevronLeft size={32} />
-              </button>
-            )}
-            
-            <div className="events-grid">
-              {visibleEvents.map((event, index) => (
-                <EventCard
-                  key={event.id || index}
-                  eventId={event.id}
-                  image={event.image}
-                  date={event.date}
-                  title={event.title}
-                  description={event.description}
-                  attendees={event.attendees}
-                  link={event.link}
-                />
-              ))}
+          {loadingEvents ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Đang tải sự kiện...</p>
             </div>
+          ) : (
+            <>
+              <div className="events-carousel-wrapper">
+                {showNavigation && (
+                  <button 
+                    className="carousel-arrow carousel-arrow-left" 
+                    onClick={handlePrevious}
+                    aria-label="Sự kiện trước"
+                  >
+                    <ChevronLeft size={32} />
+                  </button>
+                )}
+                
+                <div className="events-grid">
+                  {visibleEvents.map((event, index) => (
+                    <div 
+                      key={event.eventId || index}
+                      className="event-card-modern"
+                      onClick={() => navigate(`/eventPosts/${event.eventId}`)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {/* Card Header with Gradient */}
+                      <div className="event-card-header">
+                        <div className="event-icon-circle">
+                          <Calendar size={24} />
+                        </div>
+                        <div className="event-status-badge accepted">
+                          ✓ Đã duyệt
+                        </div>
+                      </div>
 
-            {showNavigation && (
-              <button 
-                className="carousel-arrow carousel-arrow-right" 
-                onClick={handleNext}
-                aria-label="Sự kiện tiếp theo"
-              >
-                <ChevronRight size={32} />
-              </button>
-            )}
-          </div>
+                      {/* Card Body */}
+                      <div className="event-card-body">
+                        <h3 className="event-card-title">{event.title}</h3>
+                        <p className="event-card-description">
+                          {event.description?.length > 120 
+                            ? event.description.substring(0, 120) + '...' 
+                            : event.description || 'Chưa có mô tả'}
+                        </p>
 
-          {/* Dots Indicator */}
-          {activeEvents.length > 0 && showNavigation && (
-            <div className="carousel-dots">
-              {Array.from({ length: Math.max(0, activeEvents.length - eventsPerPage + 1) }).map((_, index) => (
-                <button
-                  key={index}
-                  className={`carousel-dot ${currentEventIndex === index ? 'active' : ''}`}
-                  onClick={() => setCurrentEventIndex(index)}
-                  aria-label={`Đi tới sự kiện ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
+                        <div className="event-card-details">
+                          <div className="event-detail-item">
+                            <MapPin size={16} />
+                            <span>{event.location || 'Chưa có địa điểm'}</span>
+                          </div>
+                          <div className="event-detail-item">
+                            <Calendar size={16} />
+                            <span>{event.date}</span>
+                          </div>
+                          <div className="event-detail-item">
+                            <Users size={16} />
+                            <span>{event.memberCount} thành viên</span>
+                          </div>
+                        </div>
+                      </div>
 
-          {activeEvents.length === 0 && (
-            <p className="no-events-message">Hiện tại không có sự kiện nào sắp diễn ra.</p>
+                      {/* Card Footer */}
+                      <div className="event-card-footer">
+                        <div className="event-stats">
+                          <span className="event-stat">
+                            💬 {event.postCount}
+                          </span>
+                          <span className="event-stat">
+                            ❤️ {event.likeCount}
+                          </span>
+                        </div>
+                        <button className="event-view-btn">
+                          Xem chi tiết →
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {showNavigation && (
+                  <button 
+                    className="carousel-arrow carousel-arrow-right" 
+                    onClick={handleNext}
+                    aria-label="Sự kiện tiếp theo"
+                  >
+                    <ChevronRight size={32} />
+                  </button>
+                )}
+              </div>
+
+              {/* Dots Indicator */}
+              {displayEvents.length > 0 && showNavigation && (
+                <div className="carousel-dots">
+                  {Array.from({ length: Math.max(0, displayEvents.length - eventsPerPage + 1) }).map((_, index) => (
+                    <button
+                      key={index}
+                      className={`carousel-dot ${currentEventIndex === index ? 'active' : ''}`}
+                      onClick={() => setCurrentEventIndex(index)}
+                      aria-label={`Đi tới sự kiện ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {displayEvents.length === 0 && (
+                <p className="no-events-message">Hiện tại không có sự kiện nào.</p>
+              )}
+            </>
           )}
         </div>
       </section>
