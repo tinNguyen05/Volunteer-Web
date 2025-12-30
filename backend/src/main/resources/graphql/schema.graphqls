@@ -1,0 +1,184 @@
+scalar JSON
+
+type UserProfile {
+    userId: ID!
+    username: String
+    fullName: String
+    avatarId: String
+    email: String
+    bio: String
+    status: String
+    createdAt: String
+}
+
+type UserProfileSummary {
+    userId: ID!
+    username: String
+    fullName: String
+    avatarId: String
+}
+
+
+type Event {
+    eventId: ID!
+    eventName: String
+    eventDescription: String
+    eventLocation: String
+    createdAt: String
+    updatedAt: String
+    createBy: UserProfileSummary
+
+    listPost(page: Int = 0, size: Int = 10): PostPage
+
+    eventState: String
+
+    memberCount: Int
+    postCount: Int
+    likeCount: Int
+    categories: [String!]!
+
+
+    isJoined: Boolean
+}
+
+type EventSummary {
+    eventId: ID!
+    eventName: String
+    eventDescription: String
+    eventLocation: String
+    createdAt: String
+    updatedAt: String
+    eventState: String
+}
+
+type Post {
+    postId: ID!
+    content: String
+    createdAt: String
+    updatedAt: String
+    likeCount: Int
+    createBy: UserProfileSummary
+    listComment(page: Int = 0, size: Int = 10): CommentPage
+}
+
+type Comment {
+    commentId: ID!
+    content: String
+    createdAt: String
+    updatedAt: String
+    likeCount: Int
+    createBy: UserProfileSummary
+}
+
+type PageInfo {
+    page: Int!
+    size: Int!
+    totalElements: Int!
+    totalPages: Int!
+    hasNext: Boolean!
+    hasPrevious: Boolean!
+}
+
+type EventPage {
+    content: [Event!]!
+    pageInfo: PageInfo!
+}
+
+type UserProfilePage {
+    content: [UserProfile!]!
+    pageInfo: PageInfo!
+}
+
+type PostPage {
+    content: [Post!]!
+    pageInfo: PageInfo!
+}
+
+type CommentPage {
+    content: [Comment!]!
+    pageInfo: PageInfo!
+}
+
+type DashboardEventActivity {
+    event: EventSummary!
+    newPostCount: Int!
+    latestPostAt: String
+}
+
+type DashboardTrendingEvent {
+    event: EventSummary!
+    newMemberCount: Int!
+    newCommentCount: Int!
+    newLikeCount: Int!
+    latestInteractionAt: String
+}
+
+type DashboardOverview {
+    newlyPublished: [EventSummary!]!
+    recentWithNewPosts: [DashboardEventActivity!]!
+    trending: [DashboardTrendingEvent!]!
+}
+
+type UserProfileSummaryPage {
+    content: [UserProfileSummary!]!
+    pageInfo: PageInfo!
+}
+
+type RoleInEventPage {
+    content: [RoleInEvent!]!
+    pageInfo: PageInfo!
+}
+
+input EventFilterInput {
+    keyword: String
+    categories: [String!]!
+    startDateFrom: String
+    startDateTo: String
+    location: String
+    eventState: String
+}
+
+type RoleInEvent {
+    userProfile: UserProfileSummary
+    event: EventSummary
+    participationStatus: String
+    eventRole: String
+}
+
+type EventRegistration {
+    registrationId: ID!
+    userProfile: UserProfileSummary!
+    event: EventSummary!
+    status: String!
+}
+
+type EventRegistrationPage {
+    content: [EventRegistration!]!
+    pageInfo: PageInfo!
+}
+
+type Query {
+    getUserProfile(userId: ID!): UserProfile
+    getEvent(eventId: ID!): Event
+    getPost(postId: ID!): Post
+
+    findEvents(page: Int = 0, size: Int = 10, filter: JSON = null): EventPage
+
+    findEventsByEventManager(page: Int = 0, size: Int = 10): EventPage
+
+    findPosts(page: Int = 0, size: Int = 10): PostPage
+
+    findUserProfiles(page: Int = 0, size: Int = 10): UserProfilePage
+
+    userHistory(page: Int = 0, size: Int = 10): RoleInEventPage
+
+    dashboardOverview(hours: Int = 24, size: Int = 5): DashboardOverview
+
+    searchEvents(filter: EventFilterInput): [Event!]
+
+    listMemberInEvent(eventId: ID!, page: Int = 0, size: Int = 10) : RoleInEventPage
+
+    getEventRegistrationByUserId(page: Int = 0, size: Int = 10, userId: ID!) : EventRegistrationPage
+
+    getEventRegistrationByEventId(page: Int = 0, size: Int = 10, eventId: ID!) : EventRegistrationPage
+}

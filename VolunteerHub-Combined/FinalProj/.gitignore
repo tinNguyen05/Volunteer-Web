@@ -1,0 +1,35 @@
+# VolunteerHub - Root .gitignore
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# Build outputs (covered by backend/frontend .gitignore but added for safety)
+dist/
+build/
+target/
